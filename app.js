@@ -256,9 +256,30 @@ function switchTab(tab) {
 
 function doLogin(e) {
   e.preventDefault();
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const pass  = document.getElementById('loginPassword').value;
-  const user  = getUsers().find(function(u){ return u.email === email && u.password === pass; });
+  var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  var pass  = document.getElementById('loginPassword').value;
+
+  // ADMIN — hardcodé, toujours disponible
+  if (email === 'admin@pvk.fr' && pass === 'admin123') {
+    currentUser = {
+      id:'admin', email:'admin@pvk.fr', password:'admin123',
+      prenom:'Admin', nom:'PVK', role:'admin', fonction:'Président',
+      tel:'06 00 00 00 00', adresse:'Chaussée Jules César 95520 Osny',
+      inscritLe:'01/06/2025',
+      abonnement:{ saison:'2025-2026', paiement:'01/06/2025', expire:'31/05/2026', statut:'actif' }
+    };
+    saveCurrentUser(currentUser);
+    initDefaultData();
+    enterApp();
+    return;
+  }
+
+  // AUTRES MEMBRES
+  var users = getUsers();
+  var user = null;
+  for (var i = 0; i < users.length; i++) {
+    if (users[i].email === email && users[i].password === pass) { user = users[i]; break; }
+  }
   if (!user) { showError('loginError', 'Email ou mot de passe incorrect.'); return; }
   currentUser = user; saveCurrentUser(user); enterApp();
 }
