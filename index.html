@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#C41E3A"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Pétanque VK"/>
+  <title>Pétanque Vetri Kazhagam</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash" class="splash">
+  <div class="splash-inner">
+    <div class="boule-anim">
+      <div class="boule b1"></div><div class="boule b2"></div><div class="boule b3"></div>
+    </div>
+    <h1 class="splash-title">Pétanque</h1>
+    <h2 class="splash-subtitle">Vetri Kazhagam</h2>
+    <p class="splash-tagline">Club officiel · Osny 95520</p>
+  </div>
+</div>
+
+<!-- LOGIN (hors du bloc app) -->
+<div id="page-login" class="page-login-wrapper">
+  <div class="login-container">
+    <div class="login-logo">
+      <div class="logo-circle"><span class="logo-pvk">PVK</span></div>
+      <h1 class="login-title">Pétanque<br/><span>Vetri Kazhagam</span></h1>
+      <p class="login-address">📍 Chaussée Jules César · 95520 Osny</p>
+    </div>
+    <div class="card login-card">
+      <div class="tabs">
+        <button class="tab active" id="tabLogin" onclick="switchTab('login')">Connexion</button>
+        <button class="tab" id="tabRegister" onclick="switchTab('register')">Inscription</button>
+      </div>
+      <form id="formLogin" onsubmit="doLogin(event)">
+        <div class="form-group"><label>Email</label>
+          <input type="email" id="loginEmail" placeholder="votre@email.com" required/></div>
+        <div class="form-group"><label>Mot de passe</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required/></div>
+        <p id="loginError" class="form-error hidden"></p>
+        <button type="submit" class="btn-primary btn-full">Se connecter</button>
+      </form>
+      <form id="formRegister" class="hidden" onsubmit="doRegister(event)">
+        <div class="form-row">
+          <div class="form-group"><label>Prénom</label><input type="text" id="regPrenom" placeholder="Prénom" required/></div>
+          <div class="form-group"><label>Nom</label><input type="text" id="regNom" placeholder="Nom" required/></div>
+        </div>
+        <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="votre@email.com" required/></div>
+        <div class="form-group"><label>Téléphone</label><input type="tel" id="regTel" placeholder="06 XX XX XX XX"/></div>
+        <div class="form-group"><label>Fonction dans le club</label>
+          <select id="regFonction">
+            <option value="Membre">Membre</option>
+            <option value="Président">Président</option>
+            <option value="Vice-Président">Vice-Président</option>
+            <option value="Secrétaire">Secrétaire</option>
+            <option value="Trésorier">Trésorier</option>
+            <option value="Capitaine">Capitaine</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Adresse</label><input type="text" id="regAdresse" placeholder="123 rue …"/></div>
+        <div class="form-group"><label>Mot de passe</label>
+          <input type="password" id="regPassword" placeholder="Minimum 6 caractères" required minlength="6"/></div>
+        <p id="regError" class="form-error hidden"></p>
+        <button type="submit" class="btn-primary btn-full">Créer mon compte</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app" class="app hidden">
+
+  <header class="topbar">
+    <button class="topbar-menu" onclick="toggleSidebar()">&#9776;</button>
+    <div class="topbar-title">
+      <span class="topbar-pvk">PVK</span>
+      <span class="topbar-name">Vetri Kazhagam</span>
+    </div>
+    <button class="topbar-notif" onclick="showPage('actualites')" title="Actualités">🔔</button>
+  </header>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-avatar" id="sidebarAvatar">?</div>
+      <div class="sidebar-info">
+        <div class="sidebar-username" id="sidebarName">Non connecté</div>
+        <div class="sidebar-role" id="sidebarRole">—</div>
+      </div>
+    </div>
+    <ul class="sidebar-menu">
+      <li onclick="nav('accueil')"><span class="menu-icon">🏠</span> Accueil</li>
+      <li id="adminMenuItem" class="hidden" onclick="nav('admin')"><span class="menu-icon">⚙️</span> Administration</li>
+      <li onclick="nav('club')"><span class="menu-icon">🎯</span> Le Club</li>
+      <li onclick="nav('actualites')"><span class="menu-icon">📰</span> Actualités</li>
+      <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
+      <li onclick="nav('cinema')"><span class="menu-icon">🎬</span> Cinéma</li>
+      <li onclick="nav('emplois')"><span class="menu-icon">💼</span> Emplois</li>
+      <li onclick="nav('contacts')"><span class="menu-icon">📞</span> Contacts</li>
+      <li onclick="nav('adhesion')"><span class="menu-icon">🏅</span> Adhésion</li>
+      <li class="menu-sep"></li>
+      <li onclick="nav('carte')"><span class="menu-icon">🎫</span> Ma Carte Membre</li>
+      <li onclick="nav('abonnement')"><span class="menu-icon">💳</span> Mon Abonnement</li>
+      <li onclick="nav('membres')"><span class="menu-icon">👥</span> Annuaire membres</li>
+      <li onclick="nav('classement')"><span class="menu-icon">🏆</span> Classement</li>
+      <li onclick="nav('chat')"><span class="menu-icon">💬</span> Chat du club</li>
+      <li class="menu-sep"></li>
+      <li onclick="logout()"><span class="menu-icon">🚪</span> Déconnexion</li>
+    </ul>
+    <div class="sidebar-footer">Saison 2025-2026 · Osny 95520</div>
+  </nav>
+
+  <main class="main-content">
+
+    <!-- ACCUEIL -->
+    <div id="page-accueil" class="page">
+      <div class="page-inner">
+        <div class="welcome-banner">
+          <div class="welcome-logo">🎯</div>
+          <div>
+            <h2 class="welcome-title" id="welcomeName">Bienvenue !</h2>
+            <p class="welcome-sub">Pétanque Vetri Kazhagam · Osny</p>
+          </div>
+        </div>
+
+        <!-- Compteur membres : simple pour membres, détaillé pour admin -->
+        <div id="counterSimple" class="counter-grid-1 hidden">
+          <div class="counter-card total">
+            <div class="counter-val" id="cntTotal">0</div>
+            <div class="counter-lbl">Membres du club</div>
+          </div>
+        </div>
+        <div id="counterAdmin" class="counter-grid hidden">
+          <div class="counter-card total">
+            <div class="counter-val" id="cntTotalA">0</div>
+            <div class="counter-lbl">Total membres</div>
+          </div>
+          <div class="counter-card actifs">
+            <div class="counter-val" id="cntActifs">0</div>
+            <div class="counter-lbl">Adhérents ✅</div>
+          </div>
+          <div class="counter-card expires">
+            <div class="counter-val" id="cntExpires">0</div>
+            <div class="counter-lbl">Non-payants ⚠️</div>
+          </div>
+        </div>
+
+        <!-- Statut abonnement -->
+        <div class="status-card" id="statusCard">
+          <div class="status-icon" id="statusIcon">✅</div>
+          <div class="status-text">
+            <div class="status-label">Mon abonnement</div>
+            <div class="status-val" id="statusVal">Actif</div>
+          </div>
+          <div class="status-expiry" id="statusExpiry"></div>
+        </div>
+
+        <!-- Actualités aperçu -->
+        <div class="section-title">📰 Dernières actualités</div>
+        <div id="newsPreview"></div>
+        <button class="btn-outline btn-full" onclick="showPage('actualites')">Voir toutes les actualités →</button>
+
+        <!-- Accès rapide -->
+        <div class="section-title" style="margin-top:16px">Accès rapide</div>
+        <div class="quick-grid-3">
+          <div class="quick-card" onclick="showPage('club')"><span class="quick-icon">🎯</span><span>Le Club</span></div>
+          <div class="quick-card" onclick="showPage('agenda')"><span class="quick-icon">📅</span><span>Agenda</span></div>
+          <div class="quick-card" onclick="showPage('cinema')"><span class="quick-icon">🎬</span><span>Cinéma</span></div>
+          <div class="quick-card" onclick="showPage('emplois')"><span class="quick-icon">💼</span><span>Emplois</span></div>
+          <div class="quick-card" onclick="showPage('contacts')"><span class="quick-icon">📞</span><span>Contacts</span></div>
+          <div class="quick-card" onclick="showPage('adhesion')"><span class="quick-icon">🏅</span><span>Adhésion</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLUB -->
+    <div id="page-club" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🎯 Le Club</h2>
+        <div class="club-banner">
+          <div class="club-logo-big">PVK</div>
+          <div class="club-tagline">Pétanque Vetri Kazhagam<br/><span>Fondé avec passion</span></div>
+        </div>
+        <div class="card mb-12">
+          <div class="section-title mb-8">Informations</div>
+          <div class="info-row"><span class="info-icon">📍</span><span>Chaussée Jules César 95520 Osny</span></div>
+          <div class="info-row"><span class="info-icon">📞</span><a href="tel:0612345678" style="color:var(--red)">06 12 34 56 78</a></div>
+          <div class="info-row"><span class="info-icon">📧</span><a href="mailto:contact@pvk-petanque.fr" style="color:var(--red)">contact@pvk-petanque.fr</a></div>
+          <div class="info-row"><span class="info-icon">⏰</span><span>Entraînements : Mar & Jeu 18h30</span></div>
+          <div class="info-row"><span class="info-icon">📅</span><span>Compétitions le week-end</span></div>
+        </div>
+        <div class="card mb-12">
+          <div class="section-title mb-8">Le mot du Président</div>
+          <p class="club-text">Bienvenue au club Pétanque Vetri Kazhagam d'Osny ! Notre club, fondé dans l'esprit de partage et de convivialité, réunit des passionnés de pétanque de tous niveaux. Que vous soyez débutant ou confirmé, vous trouverez ici une famille accueillante.</p>
+          <p class="club-text mt-8">Venez nous rejoindre sur nos terrains de la Chaussée Jules César pour des entraînements conviviaux et des tournois animés !</p>
+        </div>
+        <div class="card">
+          <div class="section-title mb-8">Le Bureau</div>
+          <div id="bureauList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTUALITES -->
+    <div id="page-actualites" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">📰 Actualités</h2>
+        <div id="newsAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span></div>
+        <div id="newsContainer"></div>
+      </div>
+    </div>
+
+    <!-- AGENDA -->
+    <div id="page-agenda" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">📅 Agenda</h2>
+        <div class="tabs mb-12">
+          <button class="tab active" id="tabAgendaClub" onclick="switchAgenda('club')">🎯 Club</button>
+          <button class="tab" id="tabAgendaFr" onclick="switchAgenda('france')">🇫🇷 France</button>
+          <button class="tab" id="tabAgendaInde" onclick="switchAgenda('inde')">🇮🇳 Inde</button>
+          <button class="tab" id="tabAgendaCivil" onclick="switchAgenda('civil')">📋 Citoyen</button>
+        </div>
+        <div id="agendaContainer"></div>
+      </div>
+    </div>
+
+    <!-- CINEMA -->
+    <div id="page-cinema" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🎬 Cinéma</h2>
+        <p class="page-subtitle">Films à l'affiche · Région Val d'Oise</p>
+        <div id="cinemaAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span></div>
+        <div id="cinemaContainer"></div>
+      </div>
+    </div>
+
+    <!-- EMPLOIS -->
+    <div id="page-emplois" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">💼 Offres d'emploi</h2>
+        <p class="page-subtitle">Emplois partagés entre membres du club</p>
+        <div id="emploisAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span></div>
+        <div id="emploisContainer"></div>
+      </div>
+    </div>
+
+    <!-- CONTACTS -->
+    <div id="page-contacts" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">📞 Contacts</h2>
+        <div class="card mb-12">
+          <div class="section-title mb-8">Club Pétanque Vetri Kazhagam</div>
+          <div class="info-row"><span class="info-icon">📍</span><span>Chaussée Jules César 95520 Osny</span></div>
+          <div class="info-row"><span class="info-icon">📞</span><a href="tel:0612345678" class="link-red">06 12 34 56 78</a></div>
+          <div class="info-row"><span class="info-icon">📧</span><a href="mailto:contact@pvk-petanque.fr" class="link-red">contact@pvk-petanque.fr</a></div>
+        </div>
+        <div class="card mb-12">
+          <div class="section-title mb-8">Urgences & Services</div>
+          <div class="contact-row"><span class="contact-icon">🚨</span><div><div class="contact-name">SAMU</div><a href="tel:15" class="contact-tel">15</a></div></div>
+          <div class="contact-row"><span class="contact-icon">🚒</span><div><div class="contact-name">Pompiers</div><a href="tel:18" class="contact-tel">18</a></div></div>
+          <div class="contact-row"><span class="contact-icon">👮</span><div><div class="contact-name">Police / Gendarmerie</div><a href="tel:17" class="contact-tel">17</a></div></div>
+          <div class="contact-row"><span class="contact-icon">🆘</span><div><div class="contact-name">Numéro d'urgence européen</div><a href="tel:112" class="contact-tel">112</a></div></div>
+        </div>
+        <div class="card mb-12">
+          <div class="section-title mb-8">Mairie d'Osny</div>
+          <div class="info-row"><span class="info-icon">📍</span><span>15 rue Aristide Briand, 95520 Osny</span></div>
+          <div class="info-row"><span class="info-icon">📞</span><a href="tel:0134355900" class="link-red">01 34 35 59 00</a></div>
+          <div class="info-row"><span class="info-icon">🌐</span><a href="https://www.osny.fr" target="_blank" class="link-red">www.osny.fr</a></div>
+        </div>
+        <div class="card">
+          <div class="section-title mb-8">Préfecture du Val d'Oise</div>
+          <div class="info-row"><span class="info-icon">📍</span><span>5 avenue Bernard Hirsch, 95000 Cergy</span></div>
+          <div class="info-row"><span class="info-icon">📞</span><a href="tel:0134258500" class="link-red">01 34 25 85 00</a></div>
+          <div class="info-row"><span class="info-icon">🌐</span><a href="https://www.val-doise.gouv.fr" target="_blank" class="link-red">val-doise.gouv.fr</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADHESION -->
+    <div id="page-adhesion" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🏅 Adhésion au Club</h2>
+        <div class="abo-card mb-12">
+          <div class="abo-header">
+            <span class="abo-icon">🏅</span>
+            <div><div class="abo-title">Cotisation annuelle</div><div class="abo-price">49 €</div></div>
+          </div>
+          <div class="abo-divider"></div>
+          <div class="abo-rows">
+            <div class="abo-row"><span>Période</span><span class="abo-val">1er Juin → 31 Mai</span></div>
+            <div class="abo-row"><span>Saison en cours</span><span class="abo-val">2025 – 2026</span></div>
+            <div class="abo-row"><span>Renouvellement</span><span class="abo-val">Chaque 1er juin</span></div>
+          </div>
+        </div>
+        <div class="card mb-12">
+          <div class="section-title mb-8">Votre adhésion comprend</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Accès à tous les entraînements (Mar & Jeu)</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Participation aux tournois officiels</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Licence fédérale FFPJP incluse</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Assurance sportive couverte</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Accès complet à l'application PVK</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Annuaire membres + Chat du club</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Offres d'emploi & Cinéma</div>
+        </div>
+        <div class="card">
+          <div class="section-title mb-8">Comment adhérer ?</div>
+          <div class="step-row"><div class="step-num">1</div><span>Créez votre compte via "Inscription"</span></div>
+          <div class="step-row"><div class="step-num">2</div><span>Contactez le bureau pour régler les 49€</span></div>
+          <div class="step-row"><div class="step-num">3</div><span>L'administrateur valide votre adhésion</span></div>
+          <div class="step-row"><div class="step-num">4</div><span>Accès complet immédiat !</span></div>
+          <div class="contact-cta" onclick="showPage('contacts')">📞 Contacter le bureau →</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARTE MEMBRE -->
+    <div id="page-carte" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">Ma Carte Membre</h2>
+        <div id="carteAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents payants. <span onclick="showPage('adhesion')" class="link-red">Adhérez →</span></div>
+        <div id="carteContent">
+          <div class="member-card-wrap">
+            <div class="member-card">
+              <div class="mc-header">
+                <div class="mc-club">PÉTANQUE VETRI KAZHAGAM</div>
+                <div class="mc-season">Saison 2025 · 2026</div>
+              </div>
+              <div class="mc-body">
+                <div class="mc-avatar" id="mcAvatar">?</div>
+                <div class="mc-info">
+                  <div class="mc-name" id="mcName">— —</div>
+                  <div class="mc-num" id="mcNum">#000000</div>
+                  <div class="mc-status" id="mcStatus"><span class="badge-active">✓ ACTIF</span></div>
+                </div>
+              </div>
+              <div class="mc-footer">
+                <div class="mc-validity" id="mcValidity">Valide du 01/06/2025 au 31/05/2026</div>
+                <div class="mc-qr" id="mcQr"></div>
+              </div>
+              <div class="mc-stripe"></div>
+            </div>
+          </div>
+          <button class="btn-primary btn-full" onclick="shareCard()">📤 Partager ma carte</button>
+          <div class="card mt-16">
+            <div class="info-row"><span class="info-icon">🆔</span><span id="cardEmail">—</span></div>
+            <div class="info-row"><span class="info-icon">📞</span><span id="cardTel">—</span></div>
+            <div class="info-row"><span class="info-icon">📅</span><span id="cardInscrit">Inscrit le —</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABONNEMENT -->
+    <div id="page-abonnement" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">💳 Mon Abonnement</h2>
+        <div class="abo-card" id="aboCard">
+          <div class="abo-header">
+            <span class="abo-icon">💳</span>
+            <div><div class="abo-title">Cotisation Annuelle</div><div class="abo-price">49 €</div></div>
+          </div>
+          <div class="abo-divider"></div>
+          <div class="abo-rows">
+            <div class="abo-row"><span>Statut</span><span class="abo-val" id="aboStatut">—</span></div>
+            <div class="abo-row"><span>Période</span><span class="abo-val">01/06 → 31/05</span></div>
+            <div class="abo-row"><span>Saison</span><span class="abo-val" id="aboSaison">—</span></div>
+            <div class="abo-row"><span>Paiement</span><span class="abo-val" id="aboPaiement">—</span></div>
+            <div class="abo-row"><span>Expire le</span><span class="abo-val" id="aboExpire">—</span></div>
+          </div>
+          <div class="abo-progress-wrap">
+            <div class="abo-progress-label"><span>Progression saison</span><span id="aboPercent">0%</span></div>
+            <div class="abo-progress-bar"><div class="abo-progress-fill" id="aboProgressFill"></div></div>
+          </div>
+        </div>
+        <div id="aboAlert" class="abo-alert hidden">⚠️ Votre abonnement expire bientôt. Pensez à renouveler !</div>
+        <div class="card mt-16">
+          <div class="section-title mb-8">Ce que comprend votre abonnement</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Accès à tous les entraînements</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Participation aux tournois</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Licence fédérale incluse</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Accès complet à l'application</div>
+          <div class="include-row"><span class="ok-icon">✅</span> Assurance sportive</div>
+        </div>
+        <div id="renewSection" class="hidden">
+          <button class="btn-primary btn-full mt-16" onclick="renewSubscription()">🔄 Renouveler mon abonnement</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBRES -->
+    <div id="page-membres" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">👥 Membres</h2>
+
+        <!-- Message accès refusé -->
+        <div id="membresAccessMsg" class="access-msg hidden">
+          🔒 Cette rubrique est réservée aux adhérents.
+          <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span>
+        </div>
+
+        <!-- Contenu réservé adhérents + admin -->
+        <div id="membresContent">
+          <!-- Stats rapides -->
+          <div id="membreStats" class="membre-stats-bar"></div>
+
+          <!-- Recherche -->
+          <div class="search-wrap">
+            <input type="text" id="membreSearch" placeholder="🔍 Rechercher par nom, fonction, ville…" oninput="filterMembres()" class="search-input"/>
+          </div>
+
+          <!-- Filtre par statut -->
+          <div class="membre-filter-row">
+            <button class="filter-btn active" id="filterTous"    onclick="setMembreFilter('tous')">Tous</button>
+            <button class="filter-btn"         id="filterActifs"  onclick="setMembreFilter('actifs')">✅ Adhérents</button>
+            <button class="filter-btn"         id="filterExpires" onclick="setMembreFilter('expires')">⚠️ Non-payants</button>
+            <button class="filter-btn"         id="filterBureau"  onclick="setMembreFilter('bureau')">⭐ Bureau</button>
+          </div>
+
+          <!-- Liste -->
+          <div id="membresContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLASSEMENT -->
+    <div id="page-classement" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🏆 Classement</h2>
+        <div class="tabs mb-16">
+          <button class="tab active" onclick="switchRankTab('points')">Points</button>
+          <button class="tab" onclick="switchRankTab('victoires')">Victoires</button>
+        </div>
+        <div id="rankContainer"></div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div id="page-chat" class="page chat-page">
+      <div class="chat-header-bar">
+        <span class="chat-header-icon">💬</span>
+        <div><div class="chat-header-title">Chat du Club</div>
+          <div class="chat-header-sub" id="chatOnlineCount">Chargement…</div></div>
+      </div>
+      <div id="chatAccessMsg" class="access-msg hidden" style="margin:16px">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez →</span></div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-bar" id="chatInputBar">
+        <input type="text" id="chatInput" placeholder="Votre message…" maxlength="300" onkeydown="chatKeyDown(event)"/>
+        <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="page-admin" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">Administration ⚙️</h2>
+        <div class="admin-stats">
+          <div class="admin-stat-card"><div class="admin-stat-val" id="statTotal">0</div><div class="admin-stat-lbl">Membres</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="statActifs">0</div><div class="admin-stat-lbl">Actifs</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="statExpires">0</div><div class="admin-stat-lbl">Expirés</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="statCA">0€</div><div class="admin-stat-lbl">CA Saison</div></div>
+        </div>
+        <div class="section-title mt-16">Gestion des membres</div>
+        <div id="adminMembersContainer"></div>
+
+        <!-- GESTION FILMS -->
+        <div class="section-title mt-16">🎬 Gestion des films cinéma</div>
+        <div class="card mb-12">
+          <div class="film-upload-zone" onclick="document.getElementById('filmImageInput').click()">
+            <img id="filmPreview" class="film-preview hidden" alt="Aperçu affiche"/>
+            <div id="filmUploadPlaceholder" class="film-upload-placeholder">
+              <span class="film-upload-icon">📷</span>
+              <span>Touchez ici pour choisir<br/>une affiche depuis votre téléphone</span>
+            </div>
+          </div>
+          <input type="file" id="filmImageInput" accept="image/*" style="display:none" onchange="previewFilmImage(event)"/>
+          <button class="btn-primary btn-full" style="margin-top:10px" onclick="adminAjouterFilm()">➕ Ajouter cette affiche</button>
+        </div>
+        <div id="adminFilmsContainer"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="navAccueil" onclick="showPage('accueil')">
+      <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
+    </button>
+    <button class="nav-btn" id="navAgenda" onclick="showPage('agenda')">
+      <span class="nav-icon">📅</span><span class="nav-label">Agenda</span>
+    </button>
+    <button class="nav-btn" id="navCinema" onclick="showPage('cinema')">
+      <span class="nav-icon">🎬</span><span class="nav-label">Cinéma</span>
+    </button>
+    <button class="nav-btn" id="navMembres" onclick="showPage('membres')">
+      <span class="nav-icon">👥</span><span class="nav-label">Membres</span>
+    </button>
+    <button class="nav-btn" id="navChat" onclick="showPage('chat')">
+      <span class="nav-icon">💬</span><span class="nav-label">Chat</span>
+    </button>
+  </nav>
+
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<div id="modal" class="modal-overlay hidden" onclick="closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="modal-body" id="modalBody"></div>
+    <button class="btn-primary btn-full mt-16" onclick="closeModal()">Fermer</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
