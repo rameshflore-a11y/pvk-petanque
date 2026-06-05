@@ -166,8 +166,6 @@ const getFilms       = () => { try { return JSON.parse(localStorage.getItem('pvk
 const saveFilms      = f  => localStorage.setItem('pvk_films', JSON.stringify(f));
 const getCurrentUser = () => { try { return JSON.parse(localStorage.getItem('pvk_current')||'null'); } catch { return null; } };
 const saveCurrentUser= u  => localStorage.setItem('pvk_current', JSON.stringify(u));
-const getCurrentUser = () => { try { return JSON.parse(localStorage.getItem('pvk_current') || 'null'); } catch { return null; } };
-const saveCurrentUser= u => localStorage.setItem('pvk_current', JSON.stringify(u));
 
 /* ===================== HELPERS ===================== */
 const initials = (p, n) => ((p||'?')[0]+(n||'?')[0]).toUpperCase();
