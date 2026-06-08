@@ -67,7 +67,8 @@
         <div class="form-group"><label>Mot de passe</label>
           <input type="password" id="regPassword" placeholder="Minimum 6 caractères" required minlength="6"/></div>
         <p id="regError" class="form-error hidden"></p>
-        <button type="submit" class="btn-primary btn-full">Créer mon compte</button>
+        <div class="scroll-hint" onclick="scrollToSubmit()">↓ Défiler pour valider</div>
+        <button type="submit" id="submitRegBtn" class="btn-primary btn-full">✅ Créer mon compte</button>
       </form>
     </div>
   </div>
@@ -225,7 +226,6 @@
           <button class="tab active" id="tabAgendaClub" onclick="switchAgenda('club')">🎯 Club</button>
           <button class="tab" id="tabAgendaFr" onclick="switchAgenda('france')">🇫🇷 France</button>
           <button class="tab" id="tabAgendaInde" onclick="switchAgenda('inde')">🇮🇳 Inde</button>
-          <button class="tab" id="tabAgendaCivil" onclick="switchAgenda('civil')">📋 Citoyen</button>
         </div>
         <div id="agendaContainer"></div>
       </div>
@@ -290,7 +290,7 @@
         <div class="abo-card mb-12">
           <div class="abo-header">
             <span class="abo-icon">🏅</span>
-            <div><div class="abo-title">Cotisation annuelle</div><div class="abo-price">49 €</div></div>
+            <div><div class="abo-title">Cotisation annuelle</div><div class="abo-price">25 €</div></div>
           </div>
           <div class="abo-divider"></div>
           <div class="abo-rows">
@@ -309,13 +309,39 @@
           <div class="include-row"><span class="ok-icon">✅</span> Annuaire membres + Chat du club</div>
           <div class="include-row"><span class="ok-icon">✅</span> Offres d'emploi & Cinéma</div>
         </div>
-        <div class="card">
+        <div class="card mb-12">
           <div class="section-title mb-8">Comment adhérer ?</div>
           <div class="step-row"><div class="step-num">1</div><span>Créez votre compte via "Inscription"</span></div>
-          <div class="step-row"><div class="step-num">2</div><span>Contactez le bureau pour régler les 49€</span></div>
+          <div class="step-row"><div class="step-num">2</div><span>Payez la cotisation de 25€ en ligne</span></div>
           <div class="step-row"><div class="step-num">3</div><span>L'administrateur valide votre adhésion</span></div>
           <div class="step-row"><div class="step-num">4</div><span>Accès complet immédiat !</span></div>
-          <div class="contact-cta" onclick="showPage('contacts')">📞 Contacter le bureau →</div>
+        </div>
+
+        <!-- PAIEMENT EN LIGNE -->
+        <div class="card paiement-card">
+          <div class="section-title mb-8">💳 Payer en ligne — 25€</div>
+          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:14px">Réglez votre cotisation annuelle en toute sécurité par carte bancaire via HelloAsso, la plateforme dédiée aux associations françaises.</p>
+          <div class="paiement-options">
+            <a href="https://www.helloasso.com" target="_blank" class="btn-paiement helloasso">
+              <span class="paiement-icon">🏦</span>
+              <div>
+                <div class="paiement-nom">HelloAsso</div>
+                <div class="paiement-detail">Gratuit · Sécurisé · CB/Visa/Mastercard</div>
+              </div>
+              <span class="paiement-arrow">→</span>
+            </a>
+            <a href="https://paypal.me" target="_blank" class="btn-paiement paypal">
+              <span class="paiement-icon">💙</span>
+              <div>
+                <div class="paiement-nom">PayPal</div>
+                <div class="paiement-detail">Paiement sécurisé PayPal</div>
+              </div>
+              <span class="paiement-arrow">→</span>
+            </a>
+          </div>
+          <p style="font-size:.75rem;color:var(--text-muted);margin-top:10px;text-align:center">
+            ⚠️ Après le paiement, contactez l'admin pour validation : <a href="mailto:contact@pvk-petanque.fr" class="link-red">contact@pvk-petanque.fr</a>
+          </p>
         </div>
       </div>
     </div>
@@ -364,7 +390,7 @@
         <div class="abo-card" id="aboCard">
           <div class="abo-header">
             <span class="abo-icon">💳</span>
-            <div><div class="abo-title">Cotisation Annuelle</div><div class="abo-price">49 €</div></div>
+            <div><div class="abo-title">Cotisation Annuelle</div><div class="abo-price">25 €</div></div>
           </div>
           <div class="abo-divider"></div>
           <div class="abo-rows">
