@@ -699,6 +699,35 @@ textarea:focus { outline:none; border-color:var(--red); }
 .emploi-detail { font-size:.82rem; color:var(--text-muted); line-height:1.6; margin-bottom:8px; }
 .emploi-date { font-size:.72rem; color:var(--text-muted); }
 
+/* ===== PAIEMENT EN LIGNE ===== */
+.paiement-card { background:var(--card); border-radius:var(--radius); padding:16px; box-shadow:var(--shadow); }
+.paiement-options { display:flex; flex-direction:column; gap:10px; }
+.btn-paiement {
+  display:flex; align-items:center; gap:12px; padding:14px 16px;
+  border-radius:12px; text-decoration:none; color:var(--text);
+  border:2px solid var(--border); transition:all .2s;
+}
+.btn-paiement:hover { border-color:var(--red); transform:translateY(-2px); box-shadow:var(--shadow); }
+.btn-paiement.helloasso { border-color:#4CAF50; }
+.btn-paiement.helloasso:hover { background:#f0fff0; }
+.btn-paiement.paypal { border-color:#0070ba; }
+.btn-paiement.paypal:hover { background:#f0f7ff; }
+.paiement-icon { font-size:1.6rem; flex-shrink:0; }
+.paiement-nom { font-weight:700; font-size:.95rem; }
+.paiement-detail { font-size:.72rem; color:var(--text-muted); margin-top:2px; }
+.paiement-arrow { margin-left:auto; font-size:1.2rem; color:var(--text-muted); }
+
+/* ===== SCROLL HINT INSCRIPTION ===== */
+.scroll-hint {
+  text-align:center; padding:10px; font-size:.82rem; font-weight:700;
+  color:var(--red); cursor:pointer; letter-spacing:.5px;
+  animation: scrollBounce 1.5s ease-in-out infinite;
+}
+@keyframes scrollBounce {
+  0%,100% { transform:translateY(0); opacity:.7; }
+  50%      { transform:translateY(4px); opacity:1; }
+}
+
 /* ===== ADHÉSION ===== */
 .step-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:.88rem; }
 .step-row:last-child { border:none; }
