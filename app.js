@@ -1,3 +1,55 @@
+/* ===================== FIREBASE — SYNC MEMBRES ===================== */
+var db = null;
+(function() {
+  try {
+    if (typeof firebase === 'undefined') return;
+    if (!firebase.apps || !firebase.apps.length) {
+      firebase.initializeApp({
+        apiKey: "AIzaSyBUgYyG7dG0ecBpc8Pnr4AuWFn8yhc42dQ",
+        authDomain: "pvk-petanque.firebaseapp.com",
+        databaseURL: "https://pvk-petanque-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "pvk-petanque",
+        storageBucket: "pvk-petanque.firebasestorage.app",
+        messagingSenderId: "331977904647",
+        appId: "1:331977904647:web:cb7b3f8d30826c01a410a2"
+      });
+    }
+    db = firebase.database();
+  } catch(e) { console.warn('Firebase:', e.message); }
+})();
+
+// Sauvegarder un utilisateur dans Firebase
+function fbSyncUser(user) {
+  if (!db) return;
+  try { db.ref('users/' + user.id).set(user); } catch(e) {}
+}
+
+// Charger tous les membres depuis Firebase
+function fbLoadAllUsers(callback) {
+  if (!db) { callback([]); return; }
+  db.ref('users').once('value')
+    .then(function(snap) {
+      var list = [];
+      snap.forEach(function(child) { list.push(child.val()); });
+      callback(list);
+    })
+    .catch(function() { callback([]); });
+}
+
+// Chercher un utilisateur par email dans Firebase
+function fbFindUserByEmail(email, pass, callback) {
+  if (!db) { callback(null); return; }
+  db.ref('users').orderByChild('email').equalTo(email).once('value')
+    .then(function(snap) {
+      var found = null;
+      snap.forEach(function(child) {
+        if (child.val().password === pass) found = child.val();
+      });
+      callback(found);
+    })
+    .catch(function() { callback(null); });
+}
+
 /* ===================== STOCKAGE localStorage ===================== */
 
 /* ===================== DONNÉES ===================== */
@@ -262,14 +314,25 @@ function doLogin(e) {
     return;
   }
 
-  // AUTRES MEMBRES
+  // Chercher d'abord en local
   var users = getUsers();
   var user = null;
   for (var i = 0; i < users.length; i++) {
     if (users[i].email === email && users[i].password === pass) { user = users[i]; break; }
   }
-  if (!user) { showError('loginError', 'Email ou mot de passe incorrect.'); return; }
-  currentUser = user; saveCurrentUser(user); enterApp();
+  if (user) { currentUser = user; saveCurrentUser(user); enterApp(); return; }
+
+  // Pas trouvé en local → chercher dans Firebase
+  showError('loginError', '⏳ Connexion en cours…');
+  fbFindUserByEmail(email, pass, function(fbUser) {
+    if (!fbUser) { showError('loginError', 'Email ou mot de passe incorrect.'); return; }
+    // Sauvegarder localement pour la prochaine fois
+    var localUsers = getUsers();
+    if (!localUsers.find(function(u){ return u.id === fbUser.id; })) {
+      localUsers.push(fbUser); saveUsers(localUsers);
+    }
+    currentUser = fbUser; saveCurrentUser(fbUser); enterApp();
+  });
 }
 
 function doRegister(e) {
@@ -286,6 +349,7 @@ function doRegister(e) {
   var saison = getSaison(new Date());
   var newUser = { id:'U'+Date.now(), email:email, password:pass, prenom:prenom, nom:nom, tel:tel, fonction:fonction||'Membre', adresse:adresse, role:'membre', inscritLe:getPaiementDate(), abonnement:{saison:saison,paiement:getPaiementDate(),expire:getExpiry(saison),statut:'actif'} };
   users.push(newUser); saveUsers(users);
+  fbSyncUser(newUser); // Sync vers Firebase
   currentUser = newUser; saveCurrentUser(newUser);
   showToast('✅ Compte créé ! Bienvenue au club !');
   enterApp();
@@ -878,38 +942,61 @@ function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send
 
 /* ===================== ADMIN ===================== */
 function renderAdmin() {
-  if (!currentUser||currentUser.role!=='admin') return;
+  if (!currentUser || currentUser.role !== 'admin') return;
   renderAdminFilms();
-  const users=getUsers(), actifs=users.filter(u=>isAbonnementActif(u)), expires=users.filter(u=>!isAbonnementActif(u));
-  document.getElementById('statTotal').textContent  = users.length;
-  document.getElementById('statActifs').textContent = actifs.length;
-  document.getElementById('statExpires').textContent= expires.length;
-  document.getElementById('statCA').textContent     = (actifs.length*25)+'€';
-  document.getElementById('adminMembersContainer').innerHTML = users.map(u=>{
-    const ok=isAbonnementActif(u);
-    return `<div class="admin-member">
-      <div class="admin-avatar">${initials(u.prenom,u.nom)}</div>
-      <div class="admin-member-info">
-        <div class="admin-member-name">${u.prenom} ${u.nom}</div>
-        <div class="admin-member-email">${u.email}</div>
-      </div>
-      <span class="admin-badge ${ok?'actif':'expire'}">${ok?'Actif':'Expiré'}</span>
-      <div class="admin-actions">
-        ${!ok?`<button class="admin-btn valid" onclick="adminValidate('${u.id}')">✓</button>`:''}
-        ${u.role!=='admin'?`<button class="admin-btn del" onclick="adminDelete('${u.id}')">✕</button>`:''}
-      </div>
-    </div>`;
+  // Charger depuis Firebase pour voir TOUS les membres
+  document.getElementById('adminMembersContainer').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:16px">⏳ Chargement des membres…</p>';
+  fbLoadAllUsers(function(fbUsers) {
+    // Fusionner Firebase + local (Firebase prioritaire)
+    var localUsers = getUsers();
+    fbUsers.forEach(function(fbUser) {
+      if (!localUsers.find(function(u){ return u.id === fbUser.id; })) {
+        localUsers.push(fbUser);
+      }
+    });
+    // Sauvegarder localement la liste complète
+    saveUsers(localUsers);
+    // Si Firebase vide, syncer l'admin
+    if (fbUsers.length === 0) fbSyncUser(currentUser);
+    renderAdminWithUsers(localUsers);
+  });
+}
+
+function renderAdminWithUsers(users) {
+  var actifs  = users.filter(function(u){ return isAbonnementActif(u); });
+  var expires = users.filter(function(u){ return !isAbonnementActif(u); });
+  document.getElementById('statTotal').textContent   = users.length;
+  document.getElementById('statActifs').textContent  = actifs.length;
+  document.getElementById('statExpires').textContent = expires.length;
+  document.getElementById('statCA').textContent      = (actifs.length * 25) + '€';
+  document.getElementById('adminMembersContainer').innerHTML = users.map(function(u) {
+    var ok = isAbonnementActif(u);
+    return '<div class="admin-member">' +
+      '<div class="admin-avatar">' + initials(u.prenom, u.nom) + '</div>' +
+      '<div class="admin-member-info">' +
+        '<div class="admin-member-name">' + u.prenom + ' ' + u.nom + '</div>' +
+        '<div class="admin-member-email">' + u.email + '</div>' +
+      '</div>' +
+      '<span class="admin-badge ' + (ok?'actif':'expire') + '">' + (ok?'Actif':'Expiré') + '</span>' +
+      '<div class="admin-actions">' +
+        (!ok ? '<button class="admin-btn valid" onclick="adminValidate(\'' + u.id + '\')">✓</button>' : '') +
+        (u.role !== 'admin' ? '<button class="admin-btn del" onclick="adminDelete(\'' + u.id + '\')">✕</button>' : '') +
+      '</div></div>';
   }).join('');
 }
 function adminValidate(id){
   var users=getUsers(), idx=users.findIndex(function(u){return u.id===id;}); if(idx<0)return;
   var saison=getSaison(new Date());
   users[idx].abonnement={saison:saison,paiement:getPaiementDate(),expire:getExpiry(saison),statut:'actif'};
-  saveUsers(users); showToast('✅ Abonnement validé'); renderAdmin();
+  saveUsers(users);
+  fbSyncUser(users[idx]); // Sync Firebase
+  showToast('✅ Abonnement validé'); renderAdmin();
 }
 function adminDelete(id){
   if(!confirm('Supprimer ce membre ?'))return;
-  saveUsers(getUsers().filter(function(u){return u.id!==id;})); showToast('🗑️ Membre supprimé'); renderAdmin();
+  saveUsers(getUsers().filter(function(u){return u.id!==id;}));
+  if(db) try { db.ref('users/'+id).remove(); } catch(e) {} // Supprimer Firebase
+  showToast('🗑️ Membre supprimé'); renderAdmin();
 }
 
 /* ===================== UTILITAIRES ===================== */
