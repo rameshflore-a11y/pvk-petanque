@@ -3,11 +3,11 @@
 /* ===================== DONNÉES ===================== */
 
 const NEWS = [
-  { id:1, type:'urgent', accent:'', title:'🏆 Félicitations à nos champions !', body:"L'équipe A remporte le Tournoi Départemental 2025 ! Bravo à Ahmed, Pierre et Carlos pour cette magnifique victoire en finale.", date:'28 Mai 2025' },
-  { id:2, type:'tournoi', accent:'gold', title:'Tournoi Interne Été — 14 Juin', body:'Le grand tournoi interne de l\'été aura lieu le 14 juin. Inscriptions ouvertes jusqu\'au 10 juin. Format doublettes, 16 équipes maximum.', date:'1 Juin 2025' },
-  { id:3, type:'info', accent:'green', title:'Cotisations saison 2025-2026', body:'La nouvelle saison a commencé ! Pensez à régler votre cotisation de 49€ avant le 30 juin pour conserver votre accès complet.', date:'1 Juin 2025' },
-  { id:4, type:'annonce', accent:'', title:'Nouveau terrain disponible', body:'Un troisième terrain est désormais disponible le week-end. Réservation via l\'application ou directement auprès du bureau.', date:'25 Mai 2025' },
-  { id:5, type:'info', accent:'green', title:'Entraînement Spécial Débutants', body:'Chaque samedi matin de 10h à 12h, un entraînement spécial est organisé pour les nouveaux membres. Venez nombreux !', date:'20 Mai 2025' },
+  { id:1, type:'urgent', accent:'', title:'🏆 Championnat du Val d\'Oise 2025 — Résultats', body:'Le Championnat Départemental du Val d\'Oise s\'est tenu le 25 mai à Cergy. Nos joueurs ont brillamment représenté le club PVK en atteignant les demi-finales en triplettes. Félicitations à toute l\'équipe pour cette belle performance !', date:'26 Mai 2025' },
+  { id:2, type:'tournoi', accent:'gold', title:'🎯 Concours de pétanque — Fête de la Musique', body:'À l\'occasion de la Fête de la Musique, le club organise un grand concours convivial le 21 juin à partir de 14h sur les terrains de la Chaussée Jules César. Inscription par équipes de 2 ou 3. Ambiance garantie, rafraîchissements offerts !', date:'5 Juin 2025' },
+  { id:3, type:'info', accent:'green', title:'📋 Nouvelle saison 2025-2026 — Cotisation 25€', body:'La nouvelle saison est officiellement ouverte depuis le 1er juin ! La cotisation annuelle est fixée à 25€ par membre, valable jusqu\'au 31 mai 2026. Le paiement en ligne est désormais disponible directement depuis l\'application. Bienvenue à tous les nouveaux adhérents !', date:'1 Juin 2025' },
+  { id:4, type:'annonce', accent:'', title:'📺 La pétanque aux Jeux Olympiques — Suivez l\'actualité', body:'La Fédération Française de Pétanque et Jeu Provençal (FFPJP) milite activement pour l\'intégration de la pétanque aux Jeux Olympiques. Le sport compte plus de 600 000 licenciés en France et se pratique dans 160 pays. Soutenons notre sport ensemble !', date:'20 Mai 2025' },
+  { id:5, type:'info', accent:'green', title:'🌟 Initiation pétanque — Portes ouvertes', body:'Le club Pétanque Vetri Kazhagam organise des séances d\'initiation gratuites chaque samedi matin de 10h à 12h. Venez découvrir la pétanque en famille ou entre amis ! Boules fournies, aucun équipement nécessaire. Terrains : Chaussée Jules César, 95520 Osny.', date:'15 Mai 2025' },
 ];
 
 const AGENDA_CLUB = [
@@ -224,24 +224,14 @@ function initDefaultData() {
   const users = getUsers();
   if (users.find(u => u.email === 'admin@pvk.fr')) return;
   const saison = getSaison(new Date());
-  const demos = [
-    { id:'admin',   email:'admin@pvk.fr',          password:'admin123',   prenom:'Admin',     nom:'PVK',    tel:'06 00 00 00 00', fonction:'Président',     adresse:'Chaussée Jules César 95520 Osny', role:'admin' },
-    { id:'U000002', email:'ahmed.benali@mail.fr',   password:'membre123',  prenom:'Ahmed',     nom:'Benali', tel:'06 11 22 33 44', fonction:'Vice-Président', adresse:'12 avenue des Boules, 95520 Osny', role:'membre' },
-    { id:'U000003', email:'pierre.durand@mail.fr',  password:'membre123',  prenom:'Pierre',    nom:'Durand', tel:'06 22 33 44 55', fonction:'Secrétaire',     adresse:'5 rue du Cochonnet, 95520 Osny', role:'membre' },
-    { id:'U000004', email:'sophie.martin@mail.fr',  password:'membre123',  prenom:'Sophie',    nom:'Martin', tel:'06 33 44 55 66', fonction:'Trésorier',      adresse:'8 allée des Champions, 95520 Osny', role:'membre' },
-    { id:'U000005', email:'carlos.mendes@mail.fr',  password:'membre123',  prenom:'Carlos',    nom:'Mendes', tel:'06 44 55 66 77', fonction:'Capitaine',      adresse:'3 place de la Pétanque, 95520 Osny', role:'membre' },
-    { id:'U000006', email:'fatima.oujda@mail.fr',   password:'membre123',  prenom:'Fatima',    nom:'Oujda',  tel:'06 55 66 77 88', fonction:'Membre',         adresse:'20 rue des Terrains, 95000 Cergy', role:'membre' },
-    { id:'U000007', email:'jm.faure@mail.fr',       password:'membre123',  prenom:'Jean-Marc', nom:'Faure',  tel:'06 66 77 88 99', fonction:'Membre',         adresse:'15 boulevard du Sport, 95300 Pontoise', role:'membre' },
-  ];
-  demos.forEach(d => users.push(Object.assign({ inscritLe:'01/06/2025', abonnement:{ saison, paiement:'01/06/2025', expire:'31/05/2026', statut:'actif' } }, d)));
+  users.push({
+    id:'admin', email:'admin@pvk.fr', password:'admin123',
+    prenom:'Admin', nom:'PVK', tel:'06 00 00 00 00',
+    fonction:'Président', adresse:'Chaussée Jules César 95520 Osny',
+    role:'admin', inscritLe:'01/06/2025',
+    abonnement:{ saison, paiement:'01/06/2025', expire:'31/05/2026', statut:'actif' }
+  });
   saveUsers(users);
-  if (!getMessages().length) {
-    saveMessages([
-      { id:'m1', userId:'U000002', userName:'Ahmed Benali',  text:'Bonjour à tous ! 👋', ts: Date.now()-3600000*5 },
-      { id:'m2', userId:'U000003', userName:'Pierre Durand', text:'Salut ! On va bien jouer !', ts: Date.now()-3600000*4 },
-      { id:'m3', userId:'U000004', userName:'Sophie Martin', text:'Entraînement demain 18h30 terrain B 📋', ts: Date.now()-1800000 },
-    ]);
-  }
 }
 
 /* ===================== AUTH ===================== */
@@ -437,9 +427,16 @@ function renderActualites() {
 }
 
 /* ===================== AGENDA ===================== */
+const AGENDA_FRANCE_COMPLET = [...AGENDA_FRANCE, ...AGENDA_CIVIL].sort((a,b) => {
+  const mois = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  if (a.year !== b.year) return a.year - b.year;
+  if (a.month !== b.month) return mois.indexOf(a.month) - mois.indexOf(b.month);
+  return a.day - b.day;
+});
+
 function switchAgenda(mode) {
   agendaMode = mode;
-  const ids = { club:'tabAgendaClub', france:'tabAgendaFr', inde:'tabAgendaInde', civil:'tabAgendaCivil' };
+  const ids = { club:'tabAgendaClub', france:'tabAgendaFr', inde:'tabAgendaInde' };
   Object.keys(ids).forEach(m => {
     document.getElementById(ids[m])?.classList.toggle('active', m === mode);
   });
@@ -447,7 +444,7 @@ function switchAgenda(mode) {
 }
 
 function renderAgenda() {
-  const data = { club:AGENDA_CLUB, france:AGENDA_FRANCE, inde:AGENDA_INDE, civil:AGENDA_CIVIL }[agendaMode] || [];
+  const data = { club:AGENDA_CLUB, france:AGENDA_FRANCE_COMPLET, inde:AGENDA_INDE }[agendaMode] || [];
   const typeLabel = { tournoi:'Tournoi', special:'Spécial', ferie:'Jour Férié', vacances:'Vacances 🏫', admin:'Démarche', impot:'Fiscal', election:'Élection', entrainement:'Entraînement' };
   let lastMonth = '';
   document.getElementById('agendaContainer').innerHTML = data.map(ev => {
@@ -887,7 +884,7 @@ function renderAdmin() {
   document.getElementById('statTotal').textContent  = users.length;
   document.getElementById('statActifs').textContent = actifs.length;
   document.getElementById('statExpires').textContent= expires.length;
-  document.getElementById('statCA').textContent     = (actifs.length*49)+'€';
+  document.getElementById('statCA').textContent     = (actifs.length*25)+'€';
   document.getElementById('adminMembersContainer').innerHTML = users.map(u=>{
     const ok=isAbonnementActif(u);
     return `<div class="admin-member">
@@ -920,6 +917,11 @@ function shareCard(){
   if(navigator.share) navigator.share({title:'Carte membre PVK',text:`${currentUser.prenom} ${currentUser.nom} — Pétanque Vetri Kazhagam`});
   else showToast('📋 Partagez votre carte membre !');
 }
+function scrollToSubmit() {
+  var btn = document.getElementById('submitRegBtn');
+  if (btn) btn.scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('active');}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('active');}
 let toastTimer;
