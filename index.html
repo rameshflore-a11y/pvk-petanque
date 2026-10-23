@@ -4,12 +4,15 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <meta name="theme-color" content="#C41E3A"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Pétanque VK"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="style.css?v=4"/>
 </head>
 <body>
 
@@ -48,11 +51,12 @@
       </form>
       <form id="formRegister" class="hidden" onsubmit="doRegister(event)">
         <div class="form-row">
-          <div class="form-group"><label>Prénom</label><input type="text" id="regPrenom" placeholder="Prénom" required/></div>
-          <div class="form-group"><label>Nom</label><input type="text" id="regNom" placeholder="Nom" required/></div>
+          <div class="form-group"><label>Prénom *</label><input type="text" id="regPrenom" placeholder="Prénom" required/></div>
+          <div class="form-group"><label>Nom *</label><input type="text" id="regNom" placeholder="Nom" required/></div>
         </div>
         <div class="form-group"><label>Email</label><input type="email" id="regEmail" placeholder="votre@email.com" required/></div>
-        <div class="form-group"><label>Téléphone</label><input type="tel" id="regTel" placeholder="06 XX XX XX XX"/></div>
+        <div class="form-group"><label>Portable *</label><input type="tel" id="regTel" placeholder="06 XX XX XX XX" required/></div>
+        <div class="form-group"><label>Date de naissance *</label><input type="date" id="regNaissance" required min="1900-01-01"/></div>
         <div class="form-group"><label>Fonction dans le club</label>
           <select id="regFonction">
             <option value="Membre">Membre</option>
@@ -63,7 +67,7 @@
             <option value="Capitaine">Capitaine</option>
           </select>
         </div>
-        <div class="form-group"><label>Adresse</label><input type="text" id="regAdresse" placeholder="123 rue …"/></div>
+        <div class="form-group"><label>Adresse *</label><input type="text" id="regAdresse" placeholder="N°, rue, code postal, ville" required/></div>
         <div class="form-group"><label>Mot de passe</label>
           <input type="password" id="regPassword" placeholder="Minimum 6 caractères" required minlength="6"/></div>
         <p id="regError" class="form-error hidden"></p>
@@ -115,7 +119,7 @@
       <li class="menu-sep"></li>
       <li onclick="logout()"><span class="menu-icon">🚪</span> Déconnexion</li>
     </ul>
-    <div class="sidebar-footer">Saison 2025-2026 · Osny 95520</div>
+    <div class="sidebar-footer">Saison 2026-2027 · Osny 95520</div>
   </nav>
 
   <main class="main-content">
@@ -213,7 +217,7 @@
     <div id="page-actualites" class="page">
       <div class="page-inner">
         <h2 class="page-title">📰 Actualités</h2>
-        <div id="newsAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span></div>
+        <div id="newsAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 60€/an →</span></div>
         <div id="newsContainer"></div>
       </div>
     </div>
@@ -236,7 +240,7 @@
       <div class="page-inner">
         <h2 class="page-title">🎬 Cinéma</h2>
         <p class="page-subtitle">Films à l'affiche · Région Val d'Oise</p>
-        <div id="cinemaAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span></div>
+        <div id="cinemaAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 60€/an →</span></div>
         <div id="cinemaContainer"></div>
       </div>
     </div>
@@ -246,7 +250,7 @@
       <div class="page-inner">
         <h2 class="page-title">💼 Offres d'emploi</h2>
         <p class="page-subtitle">Emplois partagés entre membres du club</p>
-        <div id="emploisAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span></div>
+        <div id="emploisAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 60€/an →</span></div>
         <div id="emploisContainer"></div>
       </div>
     </div>
@@ -290,13 +294,13 @@
         <div class="abo-card mb-12">
           <div class="abo-header">
             <span class="abo-icon">🏅</span>
-            <div><div class="abo-title">Cotisation annuelle</div><div class="abo-price">25 €</div></div>
+            <div><div class="abo-title">Cotisation annuelle</div><div class="abo-price">60 € / an</div></div>
           </div>
           <div class="abo-divider"></div>
           <div class="abo-rows">
-            <div class="abo-row"><span>Période</span><span class="abo-val">1er Juin → 31 Mai</span></div>
-            <div class="abo-row"><span>Saison en cours</span><span class="abo-val">2025 – 2026</span></div>
-            <div class="abo-row"><span>Renouvellement</span><span class="abo-val">Chaque 1er juin</span></div>
+            <div class="abo-row"><span>Cotisation mensuelle</span><span class="abo-val">5 €</span></div>
+            <div class="abo-row"><span>Saison en cours</span><span class="abo-val">2026 – 2027</span></div>
+            <div class="abo-row"><span>Validité</span><span class="abo-val">Sans date de fin</span></div>
           </div>
         </div>
         <div class="card mb-12">
@@ -312,36 +316,15 @@
         <div class="card mb-12">
           <div class="section-title mb-8">Comment adhérer ?</div>
           <div class="step-row"><div class="step-num">1</div><span>Créez votre compte via "Inscription"</span></div>
-          <div class="step-row"><div class="step-num">2</div><span>Payez la cotisation de 25€ en ligne</span></div>
-          <div class="step-row"><div class="step-num">3</div><span>L'administrateur valide votre adhésion</span></div>
+          <div class="step-row"><div class="step-num">2</div><span>Réglez 5 € par mois en espèces auprès du bureau</span></div>
+          <div class="step-row"><div class="step-num">3</div><span>L'administrateur valide votre adhésion et coche vos mois payés</span></div>
           <div class="step-row"><div class="step-num">4</div><span>Accès complet immédiat !</span></div>
         </div>
 
-        <!-- PAIEMENT EN LIGNE -->
+        <!-- PAIEMENT -->
         <div class="card paiement-card">
-          <div class="section-title mb-8">💳 Payer en ligne — 25€</div>
-          <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:14px">Réglez votre cotisation annuelle en toute sécurité par carte bancaire via HelloAsso, la plateforme dédiée aux associations françaises.</p>
-          <div class="paiement-options">
-            <a href="https://www.helloasso.com" target="_blank" class="btn-paiement helloasso">
-              <span class="paiement-icon">🏦</span>
-              <div>
-                <div class="paiement-nom">HelloAsso</div>
-                <div class="paiement-detail">Gratuit · Sécurisé · CB/Visa/Mastercard</div>
-              </div>
-              <span class="paiement-arrow">→</span>
-            </a>
-            <a href="https://paypal.me" target="_blank" class="btn-paiement paypal">
-              <span class="paiement-icon">💙</span>
-              <div>
-                <div class="paiement-nom">PayPal</div>
-                <div class="paiement-detail">Paiement sécurisé PayPal</div>
-              </div>
-              <span class="paiement-arrow">→</span>
-            </a>
-          </div>
-          <p style="font-size:.75rem;color:var(--text-muted);margin-top:10px;text-align:center">
-            ⚠️ Après le paiement, contactez l'admin pour validation : <a href="mailto:contact@pvk-petanque.fr" class="link-red">contact@pvk-petanque.fr</a>
-          </p>
+          <div class="section-title mb-8">💶 Paiement en espèces — 5 €/mois</div>
+          <p style="font-size:.88rem;color:var(--text-muted)">Pour le moment, la cotisation se règle uniquement en espèces, auprès d'un membre du bureau (lors des entraînements). L'administrateur coche ensuite le mois payé : vous le voyez dans « Mon abonnement ».</p>
         </div>
       </div>
     </div>
@@ -356,7 +339,7 @@
             <div class="member-card">
               <div class="mc-header">
                 <div class="mc-club">PÉTANQUE VETRI KAZHAGAM</div>
-                <div class="mc-season">Saison 2025 · 2026</div>
+                <div class="mc-season">Saison 2026 · 2027</div>
               </div>
               <div class="mc-body">
                 <div class="mc-avatar" id="mcAvatar">?</div>
@@ -367,7 +350,7 @@
                 </div>
               </div>
               <div class="mc-footer">
-                <div class="mc-validity" id="mcValidity">Valide du 01/06/2025 au 31/05/2026</div>
+                <div class="mc-validity" id="mcValidity">Valide — sans date de fin</div>
                 <div class="mc-qr" id="mcQr"></div>
               </div>
               <div class="mc-stripe"></div>
@@ -390,19 +373,15 @@
         <div class="abo-card" id="aboCard">
           <div class="abo-header">
             <span class="abo-icon">💳</span>
-            <div><div class="abo-title">Cotisation Annuelle</div><div class="abo-price">25 €</div></div>
+            <div><div class="abo-title">Cotisation Annuelle</div><div class="abo-price">60 € / an</div></div>
           </div>
           <div class="abo-divider"></div>
           <div class="abo-rows">
             <div class="abo-row"><span>Statut</span><span class="abo-val" id="aboStatut">—</span></div>
-            <div class="abo-row"><span>Période</span><span class="abo-val">01/06 → 31/05</span></div>
+            <div class="abo-row"><span>Mensualité</span><span class="abo-val">5 € / mois</span></div>
             <div class="abo-row"><span>Saison</span><span class="abo-val" id="aboSaison">—</span></div>
             <div class="abo-row"><span>Paiement</span><span class="abo-val" id="aboPaiement">—</span></div>
-            <div class="abo-row"><span>Expire le</span><span class="abo-val" id="aboExpire">—</span></div>
-          </div>
-          <div class="abo-progress-wrap">
-            <div class="abo-progress-label"><span>Progression saison</span><span id="aboPercent">0%</span></div>
-            <div class="abo-progress-bar"><div class="abo-progress-fill" id="aboProgressFill"></div></div>
+            <div class="abo-row"><span>Validité</span><span class="abo-val" id="aboExpire">—</span></div>
           </div>
         </div>
         <div id="aboAlert" class="abo-alert hidden">⚠️ Votre abonnement expire bientôt. Pensez à renouveler !</div>
@@ -414,8 +393,12 @@
           <div class="include-row"><span class="ok-icon">✅</span> Accès complet à l'application</div>
           <div class="include-row"><span class="ok-icon">✅</span> Assurance sportive</div>
         </div>
+        <div id="mesPaiementsCard" class="card mt-16">
+          <div class="section-title mb-8">💶 Mes paiements</div>
+          <div id="mesPaiements"></div>
+        </div>
         <div id="renewSection" class="hidden">
-          <button class="btn-primary btn-full mt-16" onclick="renewSubscription()">🔄 Renouveler mon abonnement</button>
+          <div class="abo-alert mt-16">Adhésion inactive : réglez votre cotisation en espèces auprès du bureau, l'administrateur le réactivera.</div>
         </div>
       </div>
     </div>
@@ -428,7 +411,7 @@
         <!-- Message accès refusé -->
         <div id="membresAccessMsg" class="access-msg hidden">
           🔒 Cette rubrique est réservée aux adhérents.
-          <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 49€/an →</span>
+          <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 60€/an →</span>
         </div>
 
         <!-- Contenu réservé adhérents + admin -->
@@ -489,11 +472,16 @@
         <div class="admin-stats">
           <div class="admin-stat-card"><div class="admin-stat-val" id="statTotal">0</div><div class="admin-stat-lbl">Membres</div></div>
           <div class="admin-stat-card"><div class="admin-stat-val" id="statActifs">0</div><div class="admin-stat-lbl">Actifs</div></div>
-          <div class="admin-stat-card"><div class="admin-stat-val" id="statExpires">0</div><div class="admin-stat-lbl">Expirés</div></div>
-          <div class="admin-stat-card"><div class="admin-stat-val" id="statCA">0€</div><div class="admin-stat-lbl">CA Saison</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="statExpires">0</div><div class="admin-stat-lbl">Inactifs</div></div>
+          <div class="admin-stat-card"><div class="admin-stat-val" id="statCA">0€</div><div class="admin-stat-lbl">Encaissé</div></div>
         </div>
         <div class="section-title mt-16">Gestion des membres</div>
         <div id="adminMembersContainer"></div>
+
+        <!-- SUIVI DES COTISATIONS (admin uniquement) -->
+        <div class="section-title mt-16">💶 Suivi des cotisations — 5 €/mois</div>
+        <input type="search" id="financeSearch" class="fin-search" placeholder="Rechercher un adhérent…" oninput="filterFinance()"/>
+        <div id="adminFinanceContainer"></div>
 
         <!-- GESTION FILMS -->
         <div class="section-title mt-16">🎬 Gestion des films cinéma</div>
@@ -546,6 +534,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

@@ -18,10 +18,26 @@ var db = null;
   } catch(e) { console.warn('Firebase:', e.message); }
 })();
 
-// Sauvegarder un utilisateur dans Firebase
+// Sauvegarder un utilisateur dans Firebase (sans écraser les paiements, gérés à part)
 function fbSyncUser(user) {
   if (!db) return;
-  try { db.ref('users/' + user.id).set(user); } catch(e) {}
+  try {
+    var copy = Object.assign({}, user);
+    delete copy.paiements;
+    db.ref('users/' + user.id).update(copy);
+  } catch(e) {}
+}
+
+// Paiements mensuels : users/<id>/paiements/<AAAA-MM> = true
+function fbSetPaiement(userId, mois, paye) {
+  if (!db) return Promise.reject(new Error('hors ligne'));
+  return db.ref('users/' + userId + '/paiements/' + mois).set(paye ? true : null);
+}
+function fbLoadPaiements(userId, callback) {
+  if (!db) { callback(null); return; }
+  db.ref('users/' + userId + '/paiements').once('value')
+    .then(function(snap) { callback(snap.val() || {}); })
+    .catch(function() { callback(null); });
 }
 
 // Charger tous les membres depuis Firebase
@@ -57,7 +73,7 @@ function fbFindUserByEmail(email, pass, callback) {
 const NEWS = [
   { id:1, type:'urgent', accent:'', title:'🏆 Championnat du Val d\'Oise 2025 — Résultats', body:'Le Championnat Départemental du Val d\'Oise s\'est tenu le 25 mai à Cergy. Nos joueurs ont brillamment représenté le club PVK en atteignant les demi-finales en triplettes. Félicitations à toute l\'équipe pour cette belle performance !', date:'26 Mai 2025' },
   { id:2, type:'tournoi', accent:'gold', title:'🎯 Concours de pétanque — Fête de la Musique', body:'À l\'occasion de la Fête de la Musique, le club organise un grand concours convivial le 21 juin à partir de 14h sur les terrains de la Chaussée Jules César. Inscription par équipes de 2 ou 3. Ambiance garantie, rafraîchissements offerts !', date:'5 Juin 2025' },
-  { id:3, type:'info', accent:'green', title:'📋 Nouvelle saison 2025-2026 — Cotisation 25€', body:'La nouvelle saison est officiellement ouverte depuis le 1er juin ! La cotisation annuelle est fixée à 25€ par membre, valable jusqu\'au 31 mai 2026. Le paiement en ligne est désormais disponible directement depuis l\'application. Bienvenue à tous les nouveaux adhérents !', date:'1 Juin 2025' },
+  { id:3, type:'info', accent:'green', title:'📋 Saison 2026-2027 — Cotisation 60€/an', body:'La saison 2026-2027 est ouverte ! La cotisation est de 60€ par an, soit 5€ par mois, à régler en espèces auprès du bureau. Vous pouvez suivre vos paiements mois par mois dans « Mon abonnement ». Bienvenue à tous les nouveaux adhérents !', date:'Octobre 2026' },
   { id:4, type:'annonce', accent:'', title:'📺 La pétanque aux Jeux Olympiques — Suivez l\'actualité', body:'La Fédération Française de Pétanque et Jeu Provençal (FFPJP) milite activement pour l\'intégration de la pétanque aux Jeux Olympiques. Le sport compte plus de 600 000 licenciés en France et se pratique dans 160 pays. Soutenons notre sport ensemble !', date:'20 Mai 2025' },
   { id:5, type:'info', accent:'green', title:'🌟 Initiation pétanque — Portes ouvertes', body:'Le club Pétanque Vetri Kazhagam organise des séances d\'initiation gratuites chaque samedi matin de 10h à 12h. Venez découvrir la pétanque en famille ou entre amis ! Boules fournies, aucun équipement nécessaire. Terrains : Chaussée Jules César, 95520 Osny.', date:'15 Mai 2025' },
 ];
@@ -219,29 +235,75 @@ const saveFilms      = f  => localStorage.setItem('pvk_films', JSON.stringify(f)
 const getCurrentUser = () => { try { return JSON.parse(localStorage.getItem('pvk_current')||'null'); } catch { return null; } };
 const saveCurrentUser= u  => localStorage.setItem('pvk_current', JSON.stringify(u));
 
+/* ===================== SAISON & COTISATION ===================== */
+const SAISON_COURANTE = '2026-2027';
+const SAISON_EXPIRE   = 'Sans date de fin';
+const COTISATION_MOIS = 5;   // € par mois
+const COTISATION_AN   = 60;  // € par an
+// Mois suivis : novembre et décembre 2026, puis tous les mois de 2027
+const MOIS_COTISATION = ['2026-11','2026-12'].concat(
+  ['01','02','03','04','05','06','07','08','09','10','11','12'].map(function(m){ return '2027-' + m; })
+);
+const MOIS_NOMS = ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+
 /* ===================== HELPERS ===================== */
 const initials = (p, n) => ((p||'?')[0]+(n||'?')[0]).toUpperCase();
 
-function getSaison(d) {
-  const m = d.getMonth()+1, y = d.getFullYear();
-  const s = m >= 6 ? y : y-1;
-  return `${s}-${s+1}`;
+function getSaison(d) { return SAISON_COURANTE; }
+function getExpiry(saison) { return SAISON_EXPIRE; }
+function formatDateFr(iso) {
+  if (!iso) return '—';
+  var p = iso.split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
 }
-function getExpiry(saison) { return `31/05/${parseInt(saison.split('-')[1])}`; }
+
+/* ===================== FINANCE (paiements mensuels) ===================== */
+function paiementsResume(p) {
+  p = p || {};
+  var payes = MOIS_COTISATION.filter(function(m){ return p[m]; }).length;
+  return { payes: payes, total: MOIS_COTISATION.length,
+           montant: payes * COTISATION_MOIS,
+           reste: (MOIS_COTISATION.length - payes) * COTISATION_MOIS };
+}
+// editable = true → cases à cocher (admin) ; false → lecture seule (adhérent)
+function buildGrilleMois(p, userId, editable) {
+  p = p || {};
+  var annees = {};
+  MOIS_COTISATION.forEach(function(m) {
+    var y = m.split('-')[0];
+    (annees[y] = annees[y] || []).push(m);
+  });
+  return Object.keys(annees).map(function(y) {
+    return '<div class="fin-annee"><div class="fin-annee-titre">' + y + '</div><div class="fin-grille">' +
+      annees[y].map(function(m) {
+        var ok = !!p[m];
+        var nom = MOIS_NOMS[parseInt(m.split('-')[1], 10) - 1];
+        if (editable) {
+          return '<label class="fin-mois' + (ok ? ' paye' : '') + '">' +
+            '<input type="checkbox"' + (ok ? ' checked' : '') +
+            ' onchange="adminTogglePaiement(\'' + userId + '\',\'' + m + '\',this.checked)"/>' +
+            '<span>' + nom + '</span></label>';
+        }
+        return '<div class="fin-mois' + (ok ? ' paye' : '') + '"><span class="fin-check">' + (ok ? '✓' : '·') + '</span><span>' + nom + '</span></div>';
+      }).join('') + '</div></div>';
+  }).join('');
+}
+function buildResumeHtml(p) {
+  var r = paiementsResume(p);
+  return '<div class="fin-resume">' +
+    '<span class="fin-pill ' + (r.payes ? 'ok' : 'du') + '">' + (r.payes ? '✓ ' : '') + r.payes + '/' + r.total + ' mois · ' + r.montant + ' €</span>' +
+    (r.reste > 0 ? '<span class="fin-pill du">Reste ' + r.reste + ' €</span>' : '<span class="fin-pill ok">À jour 🎉</span>') +
+    '</div>';
+}
 function getPaiementDate() {
   const n = new Date();
   return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;
 }
+// Pas de date de fin : un adhérent est actif tant que l'admin ne l'a pas désactivé
 function isAbonnementActif(user) {
-  if (!user?.abonnement) return false;
-  const p = user.abonnement.expire.split('/');
-  return new Date() <= new Date(+p[2], +p[1]-1, +p[0], 23, 59);
+  return !!(user && user.abonnement && user.abonnement.statut === 'actif');
 }
-function daysUntilExpiry(user) {
-  if (!user?.abonnement) return -999;
-  const p = user.abonnement.expire.split('/');
-  return Math.ceil((new Date(+p[2], +p[1]-1, +p[0], 23, 59) - new Date()) / 86400000);
-}
+function daysUntilExpiry(user) { return isAbonnementActif(user) ? 99999 : -999; }
 function saisonProgress(user) {
   if (!user?.abonnement) return 0;
   const sp = user.abonnement.paiement.split('/');
@@ -281,7 +343,7 @@ function initDefaultData() {
     prenom:'Admin', nom:'PVK', tel:'06 00 00 00 00',
     fonction:'Président', adresse:'Chaussée Jules César 95520 Osny',
     role:'admin', inscritLe:'01/06/2025',
-    abonnement:{ saison, paiement:'01/06/2025', expire:'31/05/2026', statut:'actif' }
+    abonnement:{ saison, paiement:'01/06/2026', expire:SAISON_EXPIRE, statut:'actif' }
   });
   saveUsers(users);
 }
@@ -306,7 +368,7 @@ function doLogin(e) {
       prenom:'Admin', nom:'PVK', role:'admin', fonction:'Président',
       tel:'06 00 00 00 00', adresse:'Chaussée Jules César 95520 Osny',
       inscritLe:'01/06/2025',
-      abonnement:{ saison:'2025-2026', paiement:'01/06/2025', expire:'31/05/2026', statut:'actif' }
+      abonnement:{ saison:SAISON_COURANTE, paiement:'01/06/2026', expire:SAISON_EXPIRE, statut:'actif' }
     };
     saveCurrentUser(currentUser);
     initDefaultData();
@@ -344,10 +406,22 @@ function doRegister(e) {
   const tel     = document.getElementById('regTel').value.trim();
   const fonction= document.getElementById('regFonction').value;
   const adresse = document.getElementById('regAdresse').value.trim();
+  const naissance = document.getElementById('regNaissance').value; // AAAA-MM-JJ
+  // Champs obligatoires
+  if (!nom || !prenom || !tel || !adresse || !naissance) {
+    showError('regError', 'Merci de remplir : nom, prénom, portable, adresse et date de naissance.'); return;
+  }
+  if (!/^(?:\+33\s?|0)[67](?:[\s.-]?\d{2}){4}$/.test(tel)) {
+    showError('regError', 'Numéro de portable invalide (ex : 06 12 34 56 78).'); return;
+  }
+  var dn = new Date(naissance);
+  if (isNaN(dn.getTime()) || dn > new Date() || dn.getFullYear() < 1900) {
+    showError('regError', 'Date de naissance invalide.'); return;
+  }
   var users = getUsers();
   if (users.find(function(u){ return u.email===email; })) { showError('regError', 'Cet email est déjà utilisé.'); return; }
   var saison = getSaison(new Date());
-  var newUser = { id:'U'+Date.now(), email:email, password:pass, prenom:prenom, nom:nom, tel:tel, fonction:fonction||'Membre', adresse:adresse, role:'membre', inscritLe:getPaiementDate(), abonnement:{saison:saison,paiement:getPaiementDate(),expire:getExpiry(saison),statut:'actif'} };
+  var newUser = { id:'U'+Date.now(), email:email, password:pass, prenom:prenom, nom:nom, tel:tel, naissance:naissance, fonction:fonction||'Membre', adresse:adresse, role:'membre', inscritLe:getPaiementDate(), abonnement:{saison:saison,paiement:getPaiementDate(),expire:getExpiry(saison),statut:'actif'} };
   users.push(newUser); saveUsers(users);
   fbSyncUser(newUser); // Sync vers Firebase
   currentUser = newUser; saveCurrentUser(newUser);
@@ -443,8 +517,8 @@ function renderAccueil() {
   const sc = document.getElementById('statusCard');
   sc.className = `status-card${actif?'':' expired'}`;
   document.getElementById('statusIcon').textContent = actif ? '✅' : '❌';
-  document.getElementById('statusVal').textContent  = actif ? 'Actif' : 'Expiré';
-  document.getElementById('statusExpiry').textContent = actif ? (days<=30?`⚠️ Expire dans ${days} jours`:`Expire le ${currentUser.abonnement?.expire||'—'}`) : `Expiré le ${currentUser.abonnement?.expire||'—'}`;
+  document.getElementById('statusVal').textContent  = actif ? 'Actif' : 'Inactif';
+  document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
   // Aperçu actualités
   const preview = document.getElementById('newsPreview');
   {
@@ -704,8 +778,8 @@ function renderCarte() {
   document.getElementById('mcName').textContent    = `${currentUser.prenom} ${currentUser.nom}`;
   document.getElementById('mcNum').textContent     = `#${currentUser.id}`;
   const ok = isAbonnementActif(currentUser);
-  document.getElementById('mcStatus').innerHTML   = ok ? '<span class="badge-active">✓ ACTIF</span>' : '<span class="badge-active badge-expired">✗ EXPIRÉ</span>';
-  document.getElementById('mcValidity').textContent = currentUser.abonnement ? `Valide du 01/06/${currentUser.abonnement.saison.split('-')[0]} au ${currentUser.abonnement.expire}` : '—';
+  document.getElementById('mcStatus').innerHTML   = ok ? '<span class="badge-active">✓ ACTIF</span>' : '<span class="badge-active badge-expired">✗ INACTIF</span>';
+  document.getElementById('mcValidity').textContent = ok ? 'Valide — sans date de fin' : 'En attente de validation';
   document.getElementById('cardEmail').textContent   = currentUser.email;
   document.getElementById('cardTel').textContent     = currentUser.tel || 'Non renseigné';
   document.getElementById('cardInscrit').textContent = `Inscrit le ${currentUser.inscritLe}`;
@@ -736,16 +810,30 @@ function renderAbonnement() {
   if (!currentUser) return;
   const actif = isAbonnementActif(currentUser);
   const abo   = currentUser.abonnement;
-  document.getElementById('aboStatut').textContent = actif ? '✅ Actif' : '❌ Expiré';
+  document.getElementById('aboStatut').textContent = actif ? '✅ Actif' : '❌ Inactif';
   document.getElementById('aboStatut').style.color = actif ? '#22c55e' : '#ef4444';
   document.getElementById('aboSaison').textContent  = abo?.saison || '—';
   document.getElementById('aboPaiement').textContent= abo?.paiement || '—';
-  document.getElementById('aboExpire').textContent  = abo?.expire || '—';
-  const pct = saisonProgress(currentUser);
-  document.getElementById('aboPercent').textContent     = pct+'%';
-  document.getElementById('aboProgressFill').style.width= pct+'%';
-  document.getElementById('aboAlert').classList.toggle('hidden', !(actif && daysUntilExpiry(currentUser)<=30));
+  document.getElementById('aboExpire').textContent  = 'Sans date de fin';
   document.getElementById('renewSection').classList.toggle('hidden', actif);
+  renderMesPaiements(currentUser.paiements);
+  // Rafraîchir depuis Firebase (l'admin a pu cocher des mois depuis un autre appareil)
+  fbLoadPaiements(currentUser.id, function(p) {
+    if (p === null || !currentUser) return;
+    currentUser.paiements = p; saveCurrentUser(currentUser);
+    var users = getUsers(), idx = users.findIndex(function(u){ return u.id === currentUser.id; });
+    if (idx >= 0) { users[idx].paiements = p; saveUsers(users); }
+    if (currentPage === 'abonnement') renderMesPaiements(p);
+  });
+}
+
+function renderMesPaiements(p) {
+  var card = document.getElementById('mesPaiementsCard');
+  if (!card) return;
+  var isAdmin = currentUser && currentUser.role === 'admin';
+  card.classList.toggle('hidden', isAdmin);
+  if (isAdmin) return;
+  document.getElementById('mesPaiements').innerHTML = buildResumeHtml(p) + buildGrilleMois(p, null, false);
 }
 
 function renewSubscription() {
@@ -950,9 +1038,8 @@ function renderAdmin() {
     // Fusionner Firebase + local (Firebase prioritaire)
     var localUsers = getUsers();
     fbUsers.forEach(function(fbUser) {
-      if (!localUsers.find(function(u){ return u.id === fbUser.id; })) {
-        localUsers.push(fbUser);
-      }
+      var i = localUsers.findIndex(function(u){ return u.id === fbUser.id; });
+      if (i < 0) localUsers.push(fbUser); else localUsers[i] = fbUser;
     });
     // Sauvegarder localement la liste complète
     saveUsers(localUsers);
@@ -968,7 +1055,9 @@ function renderAdminWithUsers(users) {
   document.getElementById('statTotal').textContent   = users.length;
   document.getElementById('statActifs').textContent  = actifs.length;
   document.getElementById('statExpires').textContent = expires.length;
-  document.getElementById('statCA').textContent      = (actifs.length * 25) + '€';
+  var encaisse = users.reduce(function(s, u){ return s + (u.role === 'admin' ? 0 : paiementsResume(u.paiements).montant); }, 0);
+  document.getElementById('statCA').textContent      = encaisse + '€';
+  renderAdminFinance(users);
   document.getElementById('adminMembersContainer').innerHTML = users.map(function(u) {
     var ok = isAbonnementActif(u);
     return '<div class="admin-member">' +
@@ -977,13 +1066,52 @@ function renderAdminWithUsers(users) {
         '<div class="admin-member-name">' + u.prenom + ' ' + u.nom + '</div>' +
         '<div class="admin-member-email">' + u.email + '</div>' +
       '</div>' +
-      '<span class="admin-badge ' + (ok?'actif':'expire') + '">' + (ok?'Actif':'Expiré') + '</span>' +
+      '<span class="admin-badge ' + (ok?'actif':'expire') + '">' + (ok?'Actif':'Inactif') + '</span>' +
       '<div class="admin-actions">' +
         (!ok ? '<button class="admin-btn valid" onclick="adminValidate(\'' + u.id + '\')">✓</button>' : '') +
         (u.role !== 'admin' ? '<button class="admin-btn del" onclick="adminDelete(\'' + u.id + '\')">✕</button>' : '') +
       '</div></div>';
   }).join('');
 }
+/* ----- Suivi des cotisations (admin uniquement) ----- */
+function renderAdminFinance(users) {
+  var c = document.getElementById('adminFinanceContainer');
+  if (!c) return;
+  var q = (document.getElementById('financeSearch')?.value || '').toLowerCase();
+  var list = users.filter(function(u){ return u.role !== 'admin'; })
+    .filter(function(u){ return !q || (u.prenom + ' ' + u.nom).toLowerCase().includes(q); })
+    .sort(function(a, b){ return (a.nom + a.prenom).localeCompare(b.nom + b.prenom); });
+  if (!list.length) { c.innerHTML = '<p class="fin-vide">Aucun adhérent.</p>'; return; }
+  c.innerHTML = list.map(function(u) {
+    return '<div class="card fin-card" id="fin-' + u.id + '">' +
+      '<div class="fin-head"><div class="admin-avatar">' + initials(u.prenom, u.nom) + '</div>' +
+      '<div class="fin-ident"><div class="admin-member-name">' + u.prenom + ' ' + u.nom + '</div>' +
+      '<div class="fin-meta">📞 ' + (u.tel || '—') + ' · 🎂 ' + formatDateFr(u.naissance) + '</div>' +
+      '<div class="fin-meta">📍 ' + (u.adresse || '—') + '</div></div></div>' +
+      '<div class="fin-resume-wrap">' + buildResumeHtml(u.paiements) + '</div>' +
+      buildGrilleMois(u.paiements, u.id, true) +
+      '</div>';
+  }).join('');
+}
+function filterFinance() { renderAdminFinance(getUsers()); }
+
+function adminTogglePaiement(userId, mois, paye) {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  var users = getUsers(), idx = users.findIndex(function(u){ return u.id === userId; });
+  if (idx < 0) return;
+  var p = Object.assign({}, users[idx].paiements || {});
+  if (paye) p[mois] = true; else delete p[mois];
+  fbSetPaiement(userId, mois, paye).then(function() {
+    users[idx].paiements = p; saveUsers(users);
+    var nom = MOIS_NOMS[parseInt(mois.split('-')[1], 10) - 1] + ' ' + mois.split('-')[0];
+    showToast(paye ? '✅ ' + nom + ' payé' : '↩️ ' + nom + ' décoché');
+    renderAdminWithUsers(users);
+  }).catch(function() {
+    showToast('⚠️ Enregistrement impossible (connexion ?)');
+    renderAdminWithUsers(getUsers());
+  });
+}
+
 function adminValidate(id){
   var users=getUsers(), idx=users.findIndex(function(u){return u.id===id;}); if(idx<0)return;
   var saison=getSaison(new Date());
