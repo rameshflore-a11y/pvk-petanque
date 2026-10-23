@@ -1,0 +1,28 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "admins": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+    "users": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        "id":        { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.val() === $uid" },
+        "email":     { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 120" },
+        "prenom":    { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 80" },
+        "nom":       { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 80" },
+        "tel":       { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 30" },
+        "naissance": { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length <= 10" },
+        "adresse":   { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 200" },
+        "fonction":  { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 40" },
+        "inscritLe": { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length <= 10" }
+      }
+    }
+  }
+}

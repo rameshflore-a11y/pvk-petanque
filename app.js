@@ -1,5 +1,7 @@
 /* ===================== FIREBASE — SYNC MEMBRES ===================== */
 var db = null;
+var fbAuth = null;
+var authEnCours = false; // connexion/inscription manuelle en cours
 (function() {
   try {
     if (typeof firebase === 'undefined') return;
@@ -15,17 +17,24 @@ var db = null;
       });
     }
     db = firebase.database();
+    fbAuth = firebase.auth();
   } catch(e) { console.warn('Firebase:', e.message); }
 })();
 
-// Sauvegarder un utilisateur dans Firebase (sans écraser les paiements, gérés à part)
+// Champs de profil qu'un membre peut écrire lui-même (les règles Firebase l'imposent aussi)
+const CHAMPS_PROFIL = ['id','email','prenom','nom','tel','naissance','adresse','fonction','inscritLe'];
+
+// Profil écrit par le membre lui-même (jamais le rôle, l'abonnement ni les paiements)
+function fbSaveProfil(user) {
+  if (!db) return Promise.reject(new Error('hors ligne'));
+  var copy = {};
+  CHAMPS_PROFIL.forEach(function(k){ if (user[k] !== undefined && user[k] !== null) copy[k] = user[k]; });
+  return db.ref('users/' + user.id).update(copy);
+}
+// Écriture admin : abonnement (validation)
 function fbSyncUser(user) {
   if (!db) return;
-  try {
-    var copy = Object.assign({}, user);
-    delete copy.paiements;
-    db.ref('users/' + user.id).update(copy);
-  } catch(e) {}
+  try { db.ref('users/' + user.id + '/abonnement').set(user.abonnement || null); } catch(e) {}
 }
 
 // Paiements mensuels : users/<id>/paiements/<AAAA-MM> = true
@@ -40,30 +49,37 @@ function fbLoadPaiements(userId, callback) {
     .catch(function() { callback(null); });
 }
 
-// Charger tous les membres depuis Firebase
+// Charger tous les membres depuis Firebase (admin uniquement) — callback(null) en cas d'échec
 function fbLoadAllUsers(callback) {
-  if (!db) { callback([]); return; }
-  db.ref('users').once('value')
-    .then(function(snap) {
+  if (!db) { callback(null); return; }
+  Promise.all([db.ref('users').once('value'), db.ref('admins').once('value')])
+    .then(function(res) {
+      var admins = res[1].val() || {};
       var list = [];
-      snap.forEach(function(child) { list.push(child.val()); });
+      res[0].forEach(function(child) {
+        var u = child.val() || {};
+        u.id = u.id || child.key;
+        delete u.password;
+        u.role = admins[u.id] ? 'admin' : 'membre';
+        list.push(u);
+      });
       callback(list);
     })
-    .catch(function() { callback([]); });
+    .catch(function(e) { console.warn('Chargement membres:', e.message); callback(null); });
 }
 
-// Chercher un utilisateur par email dans Firebase
-function fbFindUserByEmail(email, pass, callback) {
-  if (!db) { callback(null); return; }
-  db.ref('users').orderByChild('email').equalTo(email).once('value')
-    .then(function(snap) {
-      var found = null;
-      snap.forEach(function(child) {
-        if (child.val().password === pass) found = child.val();
-      });
-      callback(found);
-    })
-    .catch(function() { callback(null); });
+// Charger le profil du membre connecté (+ savoir s'il est admin)
+function fbLoadProfil(authUser) {
+  return Promise.all([
+    db.ref('users/' + authUser.uid).once('value'),
+    db.ref('admins/' + authUser.uid).once('value')
+  ]).then(function(res) {
+    var u = res[0].val() || { id: authUser.uid, email: authUser.email, prenom: '', nom: '' };
+    u.id = authUser.uid;
+    delete u.password;
+    u.role = res[1].val() ? 'admin' : 'membre';
+    return u;
+  });
 }
 
 /* ===================== STOCKAGE localStorage ===================== */
@@ -333,19 +349,16 @@ function canAccess(page) {
   return false;
 }
 
-/* ===================== DONNÉES INIT localStorage ===================== */
-function initDefaultData() {
-  const users = getUsers();
-  if (users.find(u => u.email === 'admin@pvk.fr')) return;
-  const saison = getSaison(new Date());
-  users.push({
-    id:'admin', email:'admin@pvk.fr', password:'admin123',
-    prenom:'Admin', nom:'PVK', tel:'06 00 00 00 00',
-    fonction:'Président', adresse:'Chaussée Jules César 95520 Osny',
-    role:'admin', inscritLe:'01/06/2025',
-    abonnement:{ saison, paiement:'01/06/2026', expire:SAISON_EXPIRE, statut:'actif' }
-  });
-  saveUsers(users);
+/* ===================== NETTOYAGE localStorage ===================== */
+// Les anciennes versions gardaient des mots de passe en clair sur le téléphone : on les efface.
+function nettoyerAnciennesDonnees() {
+  try {
+    var users = getUsers().filter(function(u){ return u.id !== 'admin'; });
+    users.forEach(function(u){ delete u.password; });
+    saveUsers(users);
+    var cur = getCurrentUser();
+    if (cur && cur.password) localStorage.removeItem('pvk_current');
+  } catch(e) {}
 }
 
 /* ===================== AUTH ===================== */
@@ -356,45 +369,48 @@ function switchTab(tab) {
   document.getElementById('formRegister').classList.toggle('hidden', tab!=='register');
 }
 
+function messageErreurAuth(err) {
+  var c = (err && err.code) || '';
+  if (c === 'auth/email-already-in-use') return 'Cet email est déjà utilisé.';
+  if (c === 'auth/invalid-email') return 'Adresse email invalide.';
+  if (c === 'auth/weak-password') return 'Mot de passe trop court (6 caractères minimum).';
+  if (c === 'auth/user-not-found' || c === 'auth/wrong-password' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials')
+    return 'Email ou mot de passe incorrect.';
+  if (c === 'auth/too-many-requests') return 'Trop de tentatives. Réessayez dans quelques minutes.';
+  if (c === 'auth/network-request-failed') return 'Pas de connexion internet.';
+  return 'Erreur : ' + ((err && err.message) || 'inconnue');
+}
+
+function ouvrirSession(authUser) {
+  return fbLoadProfil(authUser).then(function(u) {
+    currentUser = u; saveCurrentUser(u);
+    var users = getUsers(), i = users.findIndex(function(x){ return x.id === u.id; });
+    if (i < 0) users.push(u); else users[i] = u;
+    saveUsers(users);
+    enterApp();
+  });
+}
+
 function doLogin(e) {
   e.preventDefault();
+  if (!fbAuth) { showError('loginError', 'Service indisponible. Vérifiez votre connexion.'); return; }
   var email = document.getElementById('loginEmail').value.trim().toLowerCase();
   var pass  = document.getElementById('loginPassword').value;
-
-  // ADMIN — hardcodé, toujours disponible
-  if (email === 'admin@pvk.fr' && pass === 'admin123') {
-    currentUser = {
-      id:'admin', email:'admin@pvk.fr', password:'admin123',
-      prenom:'Admin', nom:'PVK', role:'admin', fonction:'Président',
-      tel:'06 00 00 00 00', adresse:'Chaussée Jules César 95520 Osny',
-      inscritLe:'01/06/2025',
-      abonnement:{ saison:SAISON_COURANTE, paiement:'01/06/2026', expire:SAISON_EXPIRE, statut:'actif' }
-    };
-    saveCurrentUser(currentUser);
-    initDefaultData();
-    enterApp();
-    return;
-  }
-
-  // Chercher d'abord en local
-  var users = getUsers();
-  var user = null;
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].email === email && users[i].password === pass) { user = users[i]; break; }
-  }
-  if (user) { currentUser = user; saveCurrentUser(user); enterApp(); return; }
-
-  // Pas trouvé en local → chercher dans Firebase
   showError('loginError', '⏳ Connexion en cours…');
-  fbFindUserByEmail(email, pass, function(fbUser) {
-    if (!fbUser) { showError('loginError', 'Email ou mot de passe incorrect.'); return; }
-    // Sauvegarder localement pour la prochaine fois
-    var localUsers = getUsers();
-    if (!localUsers.find(function(u){ return u.id === fbUser.id; })) {
-      localUsers.push(fbUser); saveUsers(localUsers);
-    }
-    currentUser = fbUser; saveCurrentUser(fbUser); enterApp();
-  });
+  authEnCours = true;
+  fbAuth.signInWithEmailAndPassword(email, pass)
+    .then(function(cred) { return ouvrirSession(cred.user); })
+    .catch(function(err) { showError('loginError', messageErreurAuth(err)); })
+    .then(function() { authEnCours = false; });
+}
+
+function motDePasseOublie() {
+  var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  if (!email) { showError('loginError', 'Saisissez d\'abord votre email ci-dessus.'); return; }
+  if (!fbAuth) { showError('loginError', 'Service indisponible.'); return; }
+  fbAuth.sendPasswordResetEmail(email)
+    .then(function() { showToast('📧 Email de réinitialisation envoyé à ' + email); })
+    .catch(function(err) { showError('loginError', messageErreurAuth(err)); });
 }
 
 function doRegister(e) {
@@ -418,19 +434,23 @@ function doRegister(e) {
   if (isNaN(dn.getTime()) || dn > new Date() || dn.getFullYear() < 1900) {
     showError('regError', 'Date de naissance invalide.'); return;
   }
-  var users = getUsers();
-  if (users.find(function(u){ return u.email===email; })) { showError('regError', 'Cet email est déjà utilisé.'); return; }
-  var saison = getSaison(new Date());
-  var newUser = { id:'U'+Date.now(), email:email, password:pass, prenom:prenom, nom:nom, tel:tel, naissance:naissance, fonction:fonction||'Membre', adresse:adresse, role:'membre', inscritLe:getPaiementDate(), abonnement:{saison:saison,paiement:getPaiementDate(),expire:getExpiry(saison),statut:'actif'} };
-  users.push(newUser); saveUsers(users);
-  fbSyncUser(newUser); // Sync vers Firebase
-  currentUser = newUser; saveCurrentUser(newUser);
-  showToast('✅ Compte créé ! Bienvenue au club !');
-  enterApp();
+  if (!fbAuth) { showError('regError', 'Service indisponible. Vérifiez votre connexion.'); return; }
+  showError('regError', '⏳ Création du compte…');
+  authEnCours = true;
+  fbAuth.createUserWithEmailAndPassword(email, pass)
+    .then(function(cred) {
+      var profil = { id: cred.user.uid, email: email, prenom: prenom, nom: nom, tel: tel, naissance: naissance,
+                     fonction: fonction || 'Membre', adresse: adresse, inscritLe: getPaiementDate() };
+      return fbSaveProfil(profil).then(function() { return ouvrirSession(cred.user); });
+    })
+    .then(function() { showToast('✅ Compte créé ! L\'administrateur va valider votre adhésion.'); })
+    .catch(function(err) { showError('regError', messageErreurAuth(err)); })
+    .then(function() { authEnCours = false; });
 }
 
 function logout() {
   currentUser = null; localStorage.removeItem('pvk_current');
+  if (fbAuth) fbAuth.signOut().catch(function(){});
   document.getElementById('app').classList.add('hidden');
   document.getElementById('page-login').classList.remove('hidden');
   document.getElementById('loginEmail').value = '';
@@ -1035,17 +1055,13 @@ function renderAdmin() {
   // Charger depuis Firebase pour voir TOUS les membres
   document.getElementById('adminMembersContainer').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:16px">⏳ Chargement des membres…</p>';
   fbLoadAllUsers(function(fbUsers) {
-    // Fusionner Firebase + local (Firebase prioritaire)
-    var localUsers = getUsers();
-    fbUsers.forEach(function(fbUser) {
-      var i = localUsers.findIndex(function(u){ return u.id === fbUser.id; });
-      if (i < 0) localUsers.push(fbUser); else localUsers[i] = fbUser;
-    });
-    // Sauvegarder localement la liste complète
-    saveUsers(localUsers);
-    // Si Firebase vide, syncer l'admin
-    if (fbUsers.length === 0) fbSyncUser(currentUser);
-    renderAdminWithUsers(localUsers);
+    if (fbUsers === null) {
+      showToast('⚠️ Impossible de charger les membres (droits ou connexion)');
+      renderAdminWithUsers(getUsers());
+      return;
+    }
+    saveUsers(fbUsers);
+    renderAdminWithUsers(fbUsers);
   });
 }
 
@@ -1121,7 +1137,7 @@ function adminValidate(id){
   showToast('✅ Abonnement validé'); renderAdmin();
 }
 function adminDelete(id){
-  if(!confirm('Supprimer ce membre ?'))return;
+  if(!confirm('Supprimer ce membre ? (son profil et ses paiements seront effacés)'))return;
   saveUsers(getUsers().filter(function(u){return u.id!==id;}));
   if(db) try { db.ref('users/'+id).remove(); } catch(e) {} // Supprimer Firebase
   showToast('🗑️ Membre supprimé'); renderAdmin();
@@ -1156,11 +1172,12 @@ function refreshCurrentPage() {
 
 /* ===================== INIT ===================== */
 window.addEventListener('DOMContentLoaded', function() {
-  initDefaultData();
-  var saved = getCurrentUser();
-  if (saved) {
-    var users = getUsers();
-    var fresh = users.find(function(u){ return u.id === saved.id; });
-    if (fresh) { currentUser = fresh; saveCurrentUser(fresh); enterApp(); return; }
-  }
+  nettoyerAnciennesDonnees();
+  if (!fbAuth) return;
+  // Firebase garde la session : reconnexion automatique si le membre ne s'est pas déconnecté
+  fbAuth.onAuthStateChanged(function(authUser) {
+    if (authUser && !currentUser && !authEnCours) {
+      ouvrirSession(authUser).catch(function(e){ console.warn(e); });
+    }
+  });
 });

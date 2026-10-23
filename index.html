@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="Pétanque VK"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=4"/>
+  <link rel="stylesheet" href="style.css?v=5"/>
 </head>
 <body>
 
@@ -48,6 +48,7 @@
           <input type="password" id="loginPassword" placeholder="••••••••" required/></div>
         <p id="loginError" class="form-error hidden"></p>
         <button type="submit" class="btn-primary btn-full">Se connecter</button>
+        <p style="text-align:center;margin-top:12px;font-size:.85rem"><span class="link-red" style="cursor:pointer" onclick="motDePasseOublie()">Mot de passe oublié ?</span></p>
       </form>
       <form id="formRegister" class="hidden" onsubmit="doRegister(event)">
         <div class="form-row">
@@ -533,7 +534,8 @@
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
