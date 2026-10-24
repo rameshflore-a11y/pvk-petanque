@@ -111,8 +111,9 @@ input { font-family: inherit; }
 .sidebar-menu::-webkit-scrollbar { width: 4px; }
 .sidebar-menu::-webkit-scrollbar-track { background: transparent; }
 .sidebar-menu::-webkit-scrollbar-thumb { background: var(--red); border-radius: 4px; }
-/* Indicateur "scroll vers le bas" */
-.sidebar::after {
+/* Indicateur "scroll vers le bas" — désactivé : il masquait le dernier élément du menu */
+.sidebar::after { display: none; }
+.sidebar-ancien-indicateur::after {
   content: '▼ faire défiler';
   position: absolute; bottom: 56px; left: 0; right: 0;
   text-align: center; font-size: 0.65rem; font-weight: 700;

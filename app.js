@@ -792,7 +792,7 @@ function renderMesPaiements(p) {
   var isAdmin = currentUser && currentUser.role === 'admin';
   card.classList.toggle('hidden', isAdmin);
   if (isAdmin) return;
-  document.getElementById('mesPaiements').innerHTML = buildResumeHtml(p) + buildGrilleMois(p, null, false);
+  document.getElementById('mesPaiements').innerHTML = buildGrilleMois(p, null, false);
 }
 
 function renewSubscription() {

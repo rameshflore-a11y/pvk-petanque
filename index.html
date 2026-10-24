@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="Pétanque VK"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=7"/>
+  <link rel="stylesheet" href="style.css?v=10"/>
 </head>
 <body>
 
@@ -292,24 +292,18 @@
         <div class="abo-card mb-12">
           <div class="abo-header">
             <span class="abo-icon">🏅</span>
-            <div><div class="abo-title">Cotisation annuelle</div><div class="abo-price">60 € / an</div></div>
+            <div><div class="abo-title">Cotisation</div><div class="abo-price">5 € / mois</div></div>
           </div>
           <div class="abo-divider"></div>
           <div class="abo-rows">
-            <div class="abo-row"><span>Cotisation mensuelle</span><span class="abo-val">5 €</span></div>
             <div class="abo-row"><span>Saison en cours</span><span class="abo-val">2026 – 2027</span></div>
             <div class="abo-row"><span>Validité</span><span class="abo-val">Sans date de fin</span></div>
           </div>
         </div>
         <div class="card mb-12">
-          <div class="section-title mb-8">Votre adhésion comprend</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Accès à tous les entraînements (Mar & Jeu)</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Participation aux tournois officiels</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Licence fédérale FFPJP incluse</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Assurance sportive couverte</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Accès complet à l'application PVK</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Annuaire membres + Chat du club</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Offres d'emploi & Cinéma</div>
+          <div class="section-title mb-8">À quoi sert la cotisation</div>
+          <p class="club-text">La cotisation sert uniquement à financer l'achat du matériel lié au jeu de pétanque (lumières, cochonnets, ring…) et à organiser des tournois internes avec des prix.</p>
+          <p class="club-text mt-8">Toutes les dépenses sont justifiées par des factures.</p>
         </div>
         <div class="card mb-12">
           <div class="section-title mb-8">Comment adhérer ?</div>
@@ -371,12 +365,11 @@
         <div class="abo-card" id="aboCard">
           <div class="abo-header">
             <span class="abo-icon">💳</span>
-            <div><div class="abo-title">Cotisation Annuelle</div><div class="abo-price">60 € / an</div></div>
+            <div><div class="abo-title">Cotisation</div><div class="abo-price">5 € / mois</div></div>
           </div>
           <div class="abo-divider"></div>
           <div class="abo-rows">
             <div class="abo-row"><span>Statut</span><span class="abo-val" id="aboStatut">—</span></div>
-            <div class="abo-row"><span>Mensualité</span><span class="abo-val">5 € / mois</span></div>
             <div class="abo-row"><span>Saison</span><span class="abo-val" id="aboSaison">—</span></div>
             <div class="abo-row"><span>Paiement</span><span class="abo-val" id="aboPaiement">—</span></div>
             <div class="abo-row"><span>Validité</span><span class="abo-val" id="aboExpire">—</span></div>
@@ -384,12 +377,9 @@
         </div>
         <div id="aboAlert" class="abo-alert hidden">⚠️ Votre abonnement expire bientôt. Pensez à renouveler !</div>
         <div class="card mt-16">
-          <div class="section-title mb-8">Ce que comprend votre abonnement</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Accès à tous les entraînements</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Participation aux tournois</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Licence fédérale incluse</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Accès complet à l'application</div>
-          <div class="include-row"><span class="ok-icon">✅</span> Assurance sportive</div>
+          <div class="section-title mb-8">À quoi sert la cotisation</div>
+          <p class="club-text">La cotisation sert uniquement à financer l'achat du matériel lié au jeu de pétanque (lumières, cochonnets, ring…) et à organiser des tournois internes avec des prix.</p>
+          <p class="club-text mt-8">Toutes les dépenses sont justifiées par des factures.</p>
         </div>
         <div id="mesPaiementsCard" class="card mt-16">
           <div class="section-title mb-8">💶 Mes paiements</div>
@@ -409,7 +399,7 @@
         <!-- Message accès refusé -->
         <div id="membresAccessMsg" class="access-msg hidden">
           🔒 Cette rubrique est réservée aux adhérents.
-          <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 60€/an →</span>
+          <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 5 €/mois →</span>
         </div>
 
         <!-- Contenu réservé adhérents + admin -->
@@ -510,6 +500,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=7"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
