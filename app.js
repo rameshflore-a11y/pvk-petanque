@@ -861,15 +861,26 @@ function cinemasCoches() {
   return Array.from(document.querySelectorAll('#cinemasChoix input:checked')).map(x => cinemasListe[+x.value]);
 }
 function adminAjouterCinema() {
-  const nom = document.getElementById('nouveauCinema').value.trim();
-  if (!nom) return;
+  const champ = document.getElementById('nouveauCinema');
+  const nom = champ.value.trim();
+  if (!nom) { showToast('✏️ Tapez d\'abord le nom du cinéma dans le champ'); champ.focus(); return; }
   const coches = cinemasCoches();
-  if (cinemasListe.includes(nom)) { renderChoixCinemas(coches.concat([nom])); return; }
-  db.ref('config/cinemas').push(nom.slice(0,100)).then(() => {
-    cinemasListe.push(nom); cinemasListe.sort((a,b) => a.localeCompare(b));
-    document.getElementById('nouveauCinema').value = '';
+  const fin = function(msg) {
+    champ.value = '';
     renderChoixCinemas(coches.concat([nom]));
-  }).catch(() => showToast('⚠️ Ajout impossible'));
+    document.getElementById('cinemasChoix').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast(msg);
+  };
+  if (cinemasListe.includes(nom)) { fin('✅ « ' + nom + ' » coché'); return; }
+  if (!db) { showToast('⚠️ Pas de connexion à la base'); return; }
+  db.ref('config/cinemas').push(nom.slice(0,100)).then(function() {
+    cinemasListe.push(nom); cinemasListe.sort((a,b) => a.localeCompare(b));
+    fin('✅ Cinéma ajouté et coché');
+  }).catch(function(e) {
+    console.warn('cinéma:', e);
+    const refus = /permission/i.test((e && (e.code || e.message)) || '');
+    showToast(refus ? '⚠️ Refusé par Firebase : collez les dernières règles (films / config)' : '⚠️ Ajout impossible : ' + ((e && e.message) || 'erreur'));
+  });
 }
 function annulerFilm() {
   filmSelection = null;

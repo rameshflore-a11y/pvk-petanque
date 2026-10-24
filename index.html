@@ -451,7 +451,7 @@
             <div id="filmChoisi"></div>
             <div class="section-title mt-8 mb-8">Dans quels cinémas ?</div>
             <div id="cinemasChoix"></div>
-            <input type="text" id="nouveauCinema" class="fin-search mt-8" placeholder="Nouveau cinéma (ex : Nom du cinéma — Ville)" maxlength="100"/>
+            <input type="text" id="nouveauCinema" class="fin-search mt-8" placeholder="Tapez ici le nom du cinéma" maxlength="100" onkeydown="if(event.key==='Enter')adminAjouterCinema()"/>
             <button class="btn-outline btn-full" onclick="adminAjouterCinema()">➕ Ajouter ce cinéma à la liste</button>
             <div class="section-title mt-16 mb-8">Lien des séances / réservation</div>
             <input type="url" id="filmLien" class="fin-search" placeholder="https://… (page du film sur le site du cinéma)"/>
@@ -543,6 +543,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>
