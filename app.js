@@ -309,7 +309,7 @@ function escapeHtml(s) {
 
 /* ===== CONTRÔLE D'ACCÈS ===== */
 // Pages libres à tous les membres connectés (payants ou non)
-const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil'];
+const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals'];
 // Pages réservées aux adhérents actifs
 const MEMBER_PAGES = ['contacts','carte','membres','films'];
 // Page admin uniquement
@@ -521,6 +521,7 @@ function renderPage(page) {
     case 'membres':    renderMembres(); break;
     case 'profil':     renderProfil(); break;
     case 'films':      renderFilms(); break;
+    case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
   }
 }
@@ -904,6 +905,141 @@ function adminPublierFilm() {
 function adminSupprimerFilm(id) {
   if (!confirm('Retirer ce film de l\'affiche ?')) return;
   db.ref('films/' + id).remove().then(() => { showToast('🗑️ Film retiré'); renderFilms(); })
+    .catch(() => showToast('⚠️ Suppression impossible'));
+}
+
+/* ===================== FESTIVALS (Inde / Sri Lanka) ===================== */
+const PAYS_FESTIVAL = { inde:'🇮🇳 Inde', srilanka:'🇱🇰 Sri Lanka', both:'🇮🇳 🇱🇰 Inde & Sri Lanka' };
+
+function renderFestivals() {
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  document.getElementById('festAdminForm').classList.toggle('hidden', !isAdmin);
+  const c = document.getElementById('festContainer');
+  c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  fbList('festivals', function(list) {
+    if (list === null) { c.innerHTML = '<p class="vide">Événements indisponibles (connexion ?).</p>'; return; }
+    const auj = dateISO(new Date());
+    list = list.filter(f => (f.fin || f.debut || '') >= auj).sort((a,b) => (a.debut||'').localeCompare(b.debut||''));
+    c.innerHTML = list.length ? list.map(f => buildFestCard(f, isAdmin)).join('')
+      : '<p class="vide">Aucun événement annoncé pour le moment.</p>';
+  });
+  // Fêtes automatiques (clé Google stockée dans config/gcal)
+  const fc = document.getElementById('fetesContainer');
+  fc.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  db.ref('config/gcal').once('value').then(function(s) {
+    const cle = s.val();
+    document.getElementById('gcalConfig').classList.toggle('hidden', !(isAdmin && !cle));
+    if (!cle) { fc.innerHTML = '<p class="vide">' + (isAdmin ? 'Ajoutez la clé Google ci-dessus pour afficher les fêtes automatiquement.' : 'Bientôt disponible.') + '</p>'; return; }
+    chargerFetes(cle, afficherFetes);
+  }).catch(function() { fc.innerHTML = '<p class="vide">Fêtes indisponibles.</p>'; });
+}
+// Fêtes officielles automatiques : calendriers publics Google (Inde, Sri Lanka)
+const CALENDRIERS_FETES = [
+  { pays: 'inde',     ids: ['fr.indian#holiday@group.v.calendar.google.com', 'en.indian#holiday@group.v.calendar.google.com'] },
+  { pays: 'srilanka', ids: ['fr.lk#holiday@group.v.calendar.google.com',     'en.lk#holiday@group.v.calendar.google.com'] }
+];
+let fetesCache = null, fetesToutes = false;
+
+function lireCalendrier(cle, ids, debut, fin) {
+  if (!ids.length) return Promise.resolve([]);
+  const u = new URL('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(ids[0]) + '/events');
+  u.searchParams.set('key', cle); u.searchParams.set('timeMin', debut.toISOString()); u.searchParams.set('timeMax', fin.toISOString());
+  u.searchParams.set('singleEvents', 'true'); u.searchParams.set('orderBy', 'startTime'); u.searchParams.set('maxResults', '250');
+  return fetch(u.toString()).then(r => { if (!r.ok) throw new Error('GCAL ' + r.status); return r.json(); })
+    .then(j => j.items || [])
+    .catch(e => ids.length > 1 ? lireCalendrier(cle, ids.slice(1), debut, fin) : Promise.reject(e));  // repli en anglais
+}
+
+function chargerFetes(cle, callback) {
+  if (fetesCache) { callback(fetesCache); return; }
+  const debut = new Date(); debut.setHours(0,0,0,0);
+  const fin = new Date(debut); fin.setFullYear(fin.getFullYear() + 1);
+  Promise.all(CALENDRIERS_FETES.map(c => lireCalendrier(cle, c.ids, debut, fin).then(items => items.map(ev => {
+      const d = (ev.start && (ev.start.date || (ev.start.dateTime || '').slice(0,10))) || '';
+      let f = (ev.end && ev.end.date) || '';
+      if (f) { const x = new Date(f + 'T12:00:00'); x.setDate(x.getDate() - 1); f = dateISO(x); }   // fin exclusive chez Google
+      return { titre: ev.summary || '', pays: c.pays, debut: d, fin: f > d ? f : '', auto: true };
+    })).catch(() => null)))
+    .then(res => {
+      if (res.every(r => r === null)) { callback(null); return; }
+      // Fusion : même fête le même jour en Inde et au Sri Lanka → une seule carte « Inde & Sri Lanka »
+      const map = {};
+      [].concat(...res.filter(Boolean)).forEach(f => {
+        const t = f.titre.toLowerCase();
+        const theme = /deepavali|diwali|d[ée]pavali/.test(t) ? 'deepavali' : /pongal/.test(t) ? 'pongal'
+                    : /new year|nouvel an/.test(t) ? 'nouvelan' : /vesak|buddha/.test(t) ? 'vesak'
+                    : /maha ?shivaratri/.test(t) ? 'shivaratri' : t.replace(/[^a-zà-ÿ]/g, '');
+        const k = f.debut + '|' + theme;
+        if (map[k] && map[k].pays !== f.pays) map[k].pays = 'both'; else if (!map[k]) map[k] = f;
+      });
+      fetesCache = Object.values(map).filter(f => f.debut).sort((a,b) => a.debut.localeCompare(b.debut));
+      callback(fetesCache);
+    });
+}
+
+function afficherFetes(liste) {
+  const c = document.getElementById('fetesContainer');
+  if (liste === null) { c.innerHTML = '<p class="vide">Fêtes indisponibles pour le moment.</p>'; return; }
+  const limite = new Date(); limite.setDate(limite.getDate() + 120);
+  const visibles = fetesToutes ? liste : liste.filter(f => f.debut <= dateISO(limite));
+  c.innerHTML = (visibles.length ? visibles.map(f => buildFestCard(f, false)).join('') : '<p class="vide">Aucune fête dans les 4 prochains mois.</p>')
+    + (!fetesToutes && visibles.length < liste.length ? `<button class="btn-outline btn-full" onclick="fetesToutes=true;afficherFetes(fetesCache)">Voir toute l'année (${liste.length} fêtes)</button>` : '');
+}
+
+function adminEnregistrerCleAgenda() {
+  const cle = document.getElementById('gcalKeyInput').value.trim();
+  if (!cle) { showToast('⚠️ Collez la clé Google'); return; }
+  showToast('⏳ Vérification de la clé…');
+  const d = new Date(), f = new Date(); f.setMonth(f.getMonth() + 1);
+  lireCalendrier(cle, CALENDRIERS_FETES[0].ids, d, f)
+    .then(() => db.ref('config/gcal').set(cle))
+    .then(() => { document.getElementById('gcalKeyInput').value = ''; fetesCache = null; showToast('✅ Clé Google enregistrée'); renderFestivals(); })
+    .catch(() => showToast('⚠️ Clé refusée par Google. Vérifiez l\'API Calendar et les restrictions.'));
+}
+
+
+function buildFestCard(f, isAdmin) {
+  const lien = lienSur(f.lien);
+  const d = (f.debut || '').split('-');
+  const jour = d.length === 3 ? +d[2] : '';
+  const mois = d.length === 3 ? MOIS_LONGS[+d[1]-1].substring(0,3) : '';
+  const dates = f.fin && f.fin !== f.debut ? 'Du ' + formatDateFr(f.debut) + ' au ' + formatDateFr(f.fin) : 'Le ' + formatDateFr(f.debut);
+  const auj = dateISO(new Date());
+  const enCours = f.debut <= auj && (f.fin || f.debut) >= auj;
+  return `<div class="fest-card">
+    <div class="cal-date"><div class="cal-day">${jour}</div><div class="cal-mo">${mois}</div></div>
+    <div class="fest-infos">
+      <span class="fest-pays">${PAYS_FESTIVAL[f.pays] || PAYS_FESTIVAL.inde}</span>${f.auto ? ' <span class="fest-auto">Fête</span>' : ''}${enCours ? ' <span class="fest-encours">En ce moment</span>' : ''}
+      <div class="fest-titre">${escapeHtml(f.titre || '')}</div>
+      <div class="fest-ligne">📅 ${dates}${f.horaires ? ' · ' + escapeHtml(f.horaires) : ''}</div>
+      ${f.lieu ? `<div class="fest-ligne">📍 ${escapeHtml(f.lieu)}</div>` : ''}
+      ${f.description ? `<div class="fest-desc">${escapeHtml(f.description)}</div>` : ''}
+      ${lien ? `<a class="btn-primary film-btn" href="${escapeHtml(lien)}" target="_blank" rel="noopener">🔗 Plus d'infos</a>` : ''}
+      ${isAdmin ? `<button class="admin-btn del mt-8" onclick="adminSupprimerFestival('${f.id}')">🗑️ Supprimer</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function adminAjouterFestival() {
+  if (!currentUser || currentUser.role !== 'admin' || !db) return;
+  const v = id => document.getElementById(id).value.trim();
+  const f = { titre: v('festTitre'), pays: v('festPays'), debut: v('festDebut'), fin: v('festFin'),
+              horaires: v('festHoraires'), lieu: v('festLieu'), lien: v('festLien'), description: v('festDesc') };
+  if (!f.titre || !f.debut) { showToast('⚠️ Nom du festival et date de début obligatoires'); return; }
+  if (f.fin && f.fin < f.debut) { showToast('⚠️ La date de fin est avant la date de début'); return; }
+  if (f.lien && !lienSur(f.lien)) { showToast('⚠️ Le lien doit commencer par https://'); return; }
+  f.titre = f.titre.slice(0,150); f.lieu = f.lieu.slice(0,200); f.description = f.description.slice(0,600);
+  f.horaires = f.horaires.slice(0,80); f.ts = Date.now();
+  db.ref('festivals').push(f).then(function() {
+    ['festTitre','festDebut','festFin','festHoraires','festLieu','festLien','festDesc'].forEach(id => document.getElementById(id).value = '');
+    showToast('✅ Festival ajouté'); renderFestivals();
+  }).catch(function(e) {
+    showToast(/permission/i.test((e && (e.code || e.message)) || '') ? '⚠️ Refusé par Firebase : collez les dernières règles (festivals)' : '⚠️ Ajout impossible');
+  });
+}
+function adminSupprimerFestival(id) {
+  if (!confirm('Supprimer ce festival ?')) return;
+  db.ref('festivals/' + id).remove().then(() => { showToast('🗑️ Festival supprimé'); renderFestivals(); })
     .catch(() => showToast('⚠️ Suppression impossible'));
 }
 

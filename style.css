@@ -818,3 +818,14 @@ input:disabled { background: var(--bg); color: var(--text-muted); }
 .mt-16 { margin-top: 16px; }
 
 .cine-choix { text-transform: none; letter-spacing: normal; font-weight: 500; color: var(--text); }
+
+/* ===== FESTIVALS ===== */
+.fest-card { display: flex; gap: 12px; background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); margin-bottom: 12px; align-items: flex-start; }
+.fest-infos { flex: 1; min-width: 0; }
+.fest-pays { display: inline-block; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #FFEDD5; color: #9A3412; }
+.fest-encours { display: inline-block; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #DCFCE7; color: #166534; }
+.fest-titre { font-weight: 800; font-size: 1rem; margin-top: 6px; overflow-wrap: anywhere; }
+.fest-ligne { font-size: .82rem; margin-top: 4px; overflow-wrap: anywhere; }
+.fest-desc { font-size: .82rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+
+.fest-auto { display: inline-block; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #E0E7FF; color: #3730A3; }

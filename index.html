@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="Pétanque VK"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=15"/>
+  <link rel="stylesheet" href="style.css?v=21"/>
 </head>
 <body>
 
@@ -109,6 +109,7 @@
       <li onclick="nav('actualites')"><span class="menu-icon">📰</span> Actualités</li>
       <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
       <li onclick="nav('films')"><span class="menu-icon">🎬</span> Films</li>
+      <!-- Festivals : rubrique prête mais masquée pour le moment -->
       <li onclick="nav('contacts')"><span class="menu-icon">📞</span> Contacts</li>
       <li onclick="nav('adhesion')"><span class="menu-icon">🏅</span> Adhésion</li>
       <li class="menu-sep"></li>
@@ -197,13 +198,10 @@
         <div class="card mb-12">
           <div class="section-title mb-8">Informations</div>
           <div class="info-row"><span class="info-icon">📍</span><span>Chaussée Jules César 95520 Osny</span></div>
-          <div class="info-row"><span class="info-icon">📞</span><a href="tel:0612345678" style="color:var(--red)">06 12 34 56 78</a></div>
-          <div class="info-row"><span class="info-icon">📧</span><a href="mailto:contact@pvk-petanque.fr" style="color:var(--red)">contact@pvk-petanque.fr</a></div>
-          <div class="info-row"><span class="info-icon">⏰</span><span>Entraînements : Mar & Jeu 18h30</span></div>
+          <div class="info-row"><span class="info-icon">⏰</span><span>Entraînements : tous les jours de la semaine</span></div>
           <div class="info-row"><span class="info-icon">📅</span><span>Compétitions le week-end</span></div>
         </div>
         <div class="card mb-12">
-          <div class="section-title mb-8">Le mot du Président</div>
           <p class="club-text">Bienvenue au club Pétanque Vetri Kazhagam d'Osny ! Notre club, fondé dans l'esprit de partage et de convivialité, réunit des passionnés de pétanque de tous niveaux. Que vous soyez débutant ou confirmé, vous trouverez ici une famille accueillante.</p>
           <p class="club-text mt-8">Venez nous rejoindre sur nos terrains de la Chaussée Jules César pour des entraînements conviviaux et des tournois animés !</p>
         </div>
@@ -263,8 +261,6 @@
         <div class="card mb-12">
           <div class="section-title mb-8">Club Pétanque Vetri Kazhagam</div>
           <div class="info-row"><span class="info-icon">📍</span><span>Chaussée Jules César 95520 Osny</span></div>
-          <div class="info-row"><span class="info-icon">📞</span><a href="tel:0612345678" class="link-red">06 12 34 56 78</a></div>
-          <div class="info-row"><span class="info-icon">📧</span><a href="mailto:contact@pvk-petanque.fr" class="link-red">contact@pvk-petanque.fr</a></div>
         </div>
         <div class="card mb-12">
           <div class="section-title mb-8">Urgences & Services</div>
@@ -467,6 +463,41 @@
       </div>
     </div>
 
+    <!-- FESTIVALS -->
+    <div id="page-festivals" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🪔 Festivals indiens & sri-lankais</h2>
+        <p class="page-subtitle">Fêtes, festivals et événements culturels à venir</p>
+        <div id="festAdminForm" class="card mb-12 hidden">
+          <div class="section-title mb-8">➕ Ajouter un festival</div>
+          <input type="text" id="festTitre" class="fin-search" placeholder="Nom du festival (ex : Fête de Ganesh)" maxlength="150"/>
+          <select id="festPays" class="fin-search">
+            <option value="inde">🇮🇳 Inde</option><option value="srilanka">🇱🇰 Sri Lanka</option><option value="both">🇮🇳 🇱🇰 Inde & Sri Lanka</option>
+          </select>
+          <div class="section-title mb-8">Date de début *</div>
+          <input type="date" id="festDebut" class="fin-search"/>
+          <div class="section-title mb-8">Date de fin (si plusieurs jours)</div>
+          <input type="date" id="festFin" class="fin-search"/>
+          <input type="text" id="festHoraires" class="fin-search" placeholder="Horaires (facultatif, ex : 10h – 18h)" maxlength="80"/>
+          <input type="text" id="festLieu" class="fin-search" placeholder="Lieu (salle, adresse, ville)" maxlength="200"/>
+          <input type="url" id="festLien" class="fin-search" placeholder="Lien (site, billetterie, page Facebook…) https://…"/>
+          <textarea id="festDesc" class="fin-search" rows="3" placeholder="Description courte (facultatif)" maxlength="600"></textarea>
+          <button class="btn-primary btn-full" onclick="adminAjouterFestival()">➕ Ajouter le festival</button>
+        </div>
+        <div id="gcalConfig" class="card mb-12 hidden">
+          <div class="section-title mb-8">🔑 Fêtes automatiques</div>
+          <p class="pf-note mb-8">Collez une fois la clé d'API Google (Google Calendar API) pour afficher automatiquement les fêtes indiennes et sri-lankaises.</p>
+          <input type="text" id="gcalKeyInput" class="fin-search" placeholder="Clé d'API Google (AIza…)" autocomplete="off"/>
+          <button class="btn-primary btn-full" onclick="adminEnregistrerCleAgenda()">💾 Enregistrer la clé</button>
+        </div>
+        <div class="section-title mt-16">📍 Événements en Île-de-France</div>
+        <div id="festContainer"></div>
+        <div class="section-title mt-16">🪔 Fêtes à venir (automatique)</div>
+        <div id="fetesContainer"></div>
+        <p class="tmdb-credit">Dates des fêtes : calendriers publics Google (Inde, Sri Lanka).</p>
+      </div>
+    </div>
+
     <!-- MON PROFIL -->
     <div id="page-profil" class="page">
       <div class="page-inner">
@@ -543,6 +574,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=21"></script>
 </body>
 </html>
