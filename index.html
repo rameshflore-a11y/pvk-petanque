@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="Pétanque VK"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=13"/>
+  <link rel="stylesheet" href="style.css?v=15"/>
 </head>
 <body>
 
@@ -108,6 +108,7 @@
       <li onclick="nav('club')"><span class="menu-icon">🎯</span> Le Club</li>
       <li onclick="nav('actualites')"><span class="menu-icon">📰</span> Actualités</li>
       <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
+      <li onclick="nav('films')"><span class="menu-icon">🎬</span> Films</li>
       <li onclick="nav('contacts')"><span class="menu-icon">📞</span> Contacts</li>
       <li onclick="nav('adhesion')"><span class="menu-icon">🏅</span> Adhésion</li>
       <li class="menu-sep"></li>
@@ -180,7 +181,7 @@
           <div class="quick-card" onclick="showPage('actualites')"><span class="quick-icon">📰</span><span>Actualités</span></div>
           <div class="quick-card" onclick="showPage('profil')"><span class="quick-icon">👤</span><span>Mon profil</span></div>
           <div class="quick-card" onclick="showPage('contacts')"><span class="quick-icon">📞</span><span>Contacts</span></div>
-          <div class="quick-card" onclick="showPage('adhesion')"><span class="quick-icon">🏅</span><span>Adhésion</span></div>
+          <div class="quick-card" onclick="showPage('films')"><span class="quick-icon">🎬</span><span>Films</span></div>
         </div>
       </div>
     </div>
@@ -426,6 +427,46 @@
       </div>
     </div>
 
+    <!-- FILMS -->
+    <div id="page-films" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🎬 Films tamouls & hindis</h2>
+        <p class="page-subtitle">À l'affiche près de chez nous · Val-d'Oise, Yvelines, Saint-Denis</p>
+        <div id="filmsAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 5 €/mois →</span></div>
+
+        <div id="filmsAdmin" class="card mb-12 hidden">
+          <div class="section-title mb-8">🎬 Ajouter un film</div>
+          <div id="tmdbConfig" class="hidden">
+            <p class="pf-note mb-8">Première fois : collez votre clé API TMDB (gratuite, sur themoviedb.org).</p>
+            <input type="text" id="tmdbKeyInput" class="fin-search" placeholder="Clé d'API TMDB" autocomplete="off"/>
+            <button class="btn-primary btn-full" onclick="adminEnregistrerCleTmdb()">💾 Enregistrer la clé</button>
+          </div>
+          <div id="tmdbOutils" class="hidden">
+            <button class="btn-primary btn-full" onclick="chercherFilmsDuMoment()">🔎 Films tamouls & hindis du moment</button>
+            <input type="search" id="tmdbRecherche" class="fin-search mt-8" placeholder="… ou chercher un titre puis Entrée" onkeydown="if(event.key==='Enter')chercherFilmTitre()"/>
+            <div id="tmdbResultats" class="tmdb-grille"></div>
+            <p class="pf-note" style="text-align:right"><span class="link-red" style="cursor:pointer" onclick="afficherConfigTmdb()">Changer la clé TMDB</span></p>
+          </div>
+          <div id="filmForm" class="hidden">
+            <div id="filmChoisi"></div>
+            <div class="section-title mt-8 mb-8">Dans quels cinémas ?</div>
+            <div id="cinemasChoix"></div>
+            <input type="text" id="nouveauCinema" class="fin-search mt-8" placeholder="Nouveau cinéma (ex : Nom du cinéma — Ville)" maxlength="100"/>
+            <button class="btn-outline btn-full" onclick="adminAjouterCinema()">➕ Ajouter ce cinéma à la liste</button>
+            <div class="section-title mt-16 mb-8">Lien des séances / réservation</div>
+            <input type="url" id="filmLien" class="fin-search" placeholder="https://… (page du film sur le site du cinéma)"/>
+            <div class="section-title mb-8">À l'affiche jusqu'au</div>
+            <input type="date" id="filmJusquau" class="fin-search"/>
+            <button class="btn-primary btn-full" onclick="adminPublierFilm()">🎬 Publier le film</button>
+            <button class="btn-outline btn-full mt-8" onclick="annulerFilm()">Annuler</button>
+          </div>
+        </div>
+
+        <div id="filmsContainer"></div>
+        <p class="tmdb-credit">Fiches et affiches : TMDB. Ce produit utilise l'API TMDB mais n'est ni approuvé ni certifié par TMDB.</p>
+      </div>
+    </div>
+
     <!-- MON PROFIL -->
     <div id="page-profil" class="page">
       <div class="page-inner">
@@ -502,6 +543,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
 </body>
 </html>

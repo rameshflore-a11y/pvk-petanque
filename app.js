@@ -311,7 +311,7 @@ function escapeHtml(s) {
 // Pages libres à tous les membres connectés (payants ou non)
 const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil'];
 // Pages réservées aux adhérents actifs
-const MEMBER_PAGES = ['contacts','carte','membres'];
+const MEMBER_PAGES = ['contacts','carte','membres','films'];
 // Page admin uniquement
 const ADMIN_PAGES = ['admin'];
 
@@ -520,6 +520,7 @@ function renderPage(page) {
     case 'abonnement': renderAbonnement(); break;
     case 'membres':    renderMembres(); break;
     case 'profil':     renderProfil(); break;
+    case 'films':      renderFilms(); break;
     case 'admin':      renderAdmin(); break;
   }
 }
@@ -709,6 +710,190 @@ function adminSupprimerEvenement(id) {
   if (!confirm('Supprimer cet événement ?')) return;
   db.ref('agenda/' + id).remove().then(function(){ showToast('🗑️ Événement supprimé'); renderAgenda(); })
     .catch(function(){ showToast('⚠️ Suppression impossible'); });
+}
+
+/* ===================== FILMS (tamouls & hindis) ===================== */
+// Les fiches films viennent de TMDB (gratuit) ; l'admin choisit les cinémas et colle le lien des séances.
+const TMDB_IMG = 'https://image.tmdb.org/t/p/w342';
+const TMDB_IMG_PETIT = 'https://image.tmdb.org/t/p/w185';
+const LANGUES_FILMS = { ta:'Tamoul', hi:'Hindi', te:'Télougou', ml:'Malayalam', kn:'Kannada' };
+let tmdbCle = null, tmdbResultats = [], filmSelection = null, cinemasListe = [];
+
+function dateISO(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function lienSur(url) { return /^https?:\/\/[^\s"'<>]+$/i.test(url || '') ? url : ''; }
+
+function chargerConfigFilms(callback) {
+  if (!db) { callback(); return; }
+  Promise.all([db.ref('config/tmdb').once('value'), db.ref('config/cinemas').once('value')])
+    .then(function(r) {
+      tmdbCle = r[0].val() || null;
+      cinemasListe = [];
+      r[1].forEach(function(c) { cinemasListe.push(String(c.val())); });
+      cinemasListe.sort((a,b) => a.localeCompare(b));
+      callback();
+    })
+    .catch(function() { callback(); });
+}
+
+function renderFilms() {
+  const ok = canAccess('films');
+  document.getElementById('filmsAccessMsg').classList.toggle('hidden', ok);
+  const c = document.getElementById('filmsContainer');
+  if (!ok) { c.innerHTML = ''; document.getElementById('filmsAdmin').classList.add('hidden'); return; }
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  document.getElementById('filmsAdmin').classList.toggle('hidden', !isAdmin);
+  if (isAdmin) chargerConfigFilms(majOutilsFilms);
+  c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  fbList('films', function(list) {
+    if (list === null) { c.innerHTML = '<p class="vide">Films indisponibles (connexion ?).</p>'; return; }
+    const auj = dateISO(new Date());
+    list = list.filter(f => !f.jusquau || f.jusquau >= auj).sort((a,b) => (b.ts||0) - (a.ts||0));
+    c.innerHTML = list.length ? list.map(f => buildFilmCard(f, isAdmin)).join('')
+      : '<p class="vide">Aucun film à l\'affiche pour le moment.</p>';
+  });
+}
+
+function buildFilmCard(f, isAdmin) {
+  const lien = lienSur(f.lien);
+  const cinemas = Array.isArray(f.cinemas) ? f.cinemas : [];
+  const resume = escapeHtml(f.resume || '');
+  return `<div class="film-card">
+    ${f.affiche ? `<img class="film-affiche" src="${TMDB_IMG + escapeHtml(f.affiche)}" alt="" loading="lazy" onerror="this.style.display='none'"/>` : '<div class="film-affiche film-affiche-vide">🎬</div>'}
+    <div class="film-infos">
+      <span class="film-langue">${escapeHtml(LANGUES_FILMS[f.langue] || f.langue || '')}</span>
+      <div class="film-titre">${escapeHtml(f.titre || '')}</div>
+      ${f.titreOriginal && f.titreOriginal !== f.titre ? `<div class="film-meta">${escapeHtml(f.titreOriginal)}</div>` : ''}
+      <div class="film-meta">${f.sortie ? 'Sortie : ' + formatDateFr(f.sortie) : ''}${f.jusquau ? ' · à l\'affiche jusqu\'au ' + formatDateFr(f.jusquau) : ''}</div>
+      ${resume ? `<div class="film-resume">${resume.length > 220 ? resume.slice(0,220) + '…' : resume}</div>` : ''}
+      ${cinemas.length ? `<div class="film-cinemas">${cinemas.map(x => '📍 ' + escapeHtml(x)).join('<br/>')}</div>` : ''}
+      ${lien ? `<a class="btn-primary film-btn" href="${escapeHtml(lien)}" target="_blank" rel="noopener">🎟️ Séances & réservation</a>` : ''}
+      ${isAdmin ? `<button class="admin-btn del mt-8" onclick="adminSupprimerFilm('${f.id}')">🗑️ Retirer</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function majOutilsFilms() {
+  document.getElementById('tmdbConfig').classList.toggle('hidden', !!tmdbCle);
+  document.getElementById('tmdbOutils').classList.toggle('hidden', !tmdbCle);
+}
+function afficherConfigTmdb() {
+  document.getElementById('tmdbConfig').classList.remove('hidden');
+  document.getElementById('tmdbOutils').classList.add('hidden');
+}
+
+// Appel TMDB : accepte la « clé d'API » (v3) ou le « jeton d'accès en lecture » (v4, commence par eyJ)
+function tmdb(chemin, params, cle) {
+  cle = cle || tmdbCle;
+  const u = new URL('https://api.themoviedb.org/3' + chemin);
+  const opts = {};
+  if (cle.indexOf('eyJ') === 0) opts.headers = { Authorization: 'Bearer ' + cle };
+  else u.searchParams.set('api_key', cle);
+  u.searchParams.set('language', 'fr-FR');
+  Object.keys(params || {}).forEach(k => u.searchParams.set(k, params[k]));
+  return fetch(u.toString(), opts).then(r => { if (!r.ok) throw new Error('TMDB ' + r.status); return r.json(); });
+}
+
+function adminEnregistrerCleTmdb() {
+  const cle = document.getElementById('tmdbKeyInput').value.trim();
+  if (!cle) { showToast('⚠️ Collez la clé TMDB'); return; }
+  showToast('⏳ Vérification de la clé…');
+  tmdb('/configuration', {}, cle)
+    .then(() => db.ref('config/tmdb').set(cle))
+    .then(() => { tmdbCle = cle; document.getElementById('tmdbKeyInput').value = ''; majOutilsFilms(); showToast('✅ Clé TMDB enregistrée'); })
+    .catch(() => showToast('⚠️ Clé refusée par TMDB. Vérifiez-la.'));
+}
+
+function chercherFilmsDuMoment() {
+  if (!tmdbCle) return;
+  const zone = document.getElementById('tmdbResultats');
+  zone.innerHTML = '<p class="vide">⏳ Recherche…</p>';
+  const debut = new Date(); debut.setDate(debut.getDate() - 60);
+  const fin = new Date(); fin.setDate(fin.getDate() + 30);
+  Promise.all(['ta','hi'].map(lang => tmdb('/discover/movie', {
+      with_original_language: lang, sort_by: 'popularity.desc',
+      'primary_release_date.gte': dateISO(debut), 'primary_release_date.lte': dateISO(fin) })))
+    .then(res => {
+      const films = [].concat(res[0].results || [], res[1].results || [])
+        .sort((a,b) => (b.popularity||0) - (a.popularity||0)).slice(0, 24);
+      afficherResultatsTmdb(films);
+    })
+    .catch(() => { zone.innerHTML = '<p class="vide">⚠️ TMDB ne répond pas (clé ou connexion).</p>'; });
+}
+function chercherFilmTitre() {
+  const q = document.getElementById('tmdbRecherche').value.trim();
+  if (!q || !tmdbCle) return;
+  const zone = document.getElementById('tmdbResultats');
+  zone.innerHTML = '<p class="vide">⏳ Recherche…</p>';
+  tmdb('/search/movie', { query: q })
+    .then(r => afficherResultatsTmdb((r.results || []).slice(0, 24)))
+    .catch(() => { zone.innerHTML = '<p class="vide">⚠️ TMDB ne répond pas (clé ou connexion).</p>'; });
+}
+function afficherResultatsTmdb(films) {
+  tmdbResultats = films;
+  document.getElementById('tmdbResultats').innerHTML = films.length ? films.map((f, i) => `
+    <div class="tmdb-item" onclick="choisirFilm(${i})">
+      ${f.poster_path ? `<img src="${TMDB_IMG_PETIT + f.poster_path}" alt="" loading="lazy"/>` : '<div class="tmdb-sans">🎬</div>'}
+      <div class="tmdb-titre">${escapeHtml(f.title || f.original_title || '')}</div>
+      <div class="tmdb-sous">${escapeHtml(LANGUES_FILMS[f.original_language] || f.original_language || '')}${f.release_date ? ' · ' + formatDateFr(f.release_date) : ''}</div>
+    </div>`).join('') : '<p class="vide">Aucun film trouvé.</p>';
+}
+
+function choisirFilm(i) {
+  const f = tmdbResultats[i]; if (!f) return;
+  filmSelection = { tmdbId: f.id, titre: f.title || f.original_title || '', titreOriginal: f.original_title || '',
+                    langue: f.original_language || '', affiche: f.poster_path || '', resume: f.overview || '', sortie: f.release_date || '' };
+  document.getElementById('filmChoisi').innerHTML = buildFilmCard(filmSelection, false);
+  const jusq = new Date(); jusq.setDate(jusq.getDate() + 28);
+  document.getElementById('filmJusquau').value = dateISO(jusq);
+  document.getElementById('filmLien').value = '';
+  renderChoixCinemas([]);
+  document.getElementById('tmdbOutils').classList.add('hidden');
+  document.getElementById('filmForm').classList.remove('hidden');
+}
+function renderChoixCinemas(coches) {
+  document.getElementById('cinemasChoix').innerHTML = cinemasListe.length ? cinemasListe.map((c, i) => `
+    <label class="cine-choix"><input type="checkbox" value="${i}"${coches.includes(c) ? ' checked' : ''}/> ${escapeHtml(c)}</label>`).join('')
+    : '<p class="pf-note">Aucun cinéma enregistré : ajoutez-en un ci-dessous.</p>';
+}
+function cinemasCoches() {
+  return Array.from(document.querySelectorAll('#cinemasChoix input:checked')).map(x => cinemasListe[+x.value]);
+}
+function adminAjouterCinema() {
+  const nom = document.getElementById('nouveauCinema').value.trim();
+  if (!nom) return;
+  const coches = cinemasCoches();
+  if (cinemasListe.includes(nom)) { renderChoixCinemas(coches.concat([nom])); return; }
+  db.ref('config/cinemas').push(nom.slice(0,100)).then(() => {
+    cinemasListe.push(nom); cinemasListe.sort((a,b) => a.localeCompare(b));
+    document.getElementById('nouveauCinema').value = '';
+    renderChoixCinemas(coches.concat([nom]));
+  }).catch(() => showToast('⚠️ Ajout impossible'));
+}
+function annulerFilm() {
+  filmSelection = null;
+  document.getElementById('filmForm').classList.add('hidden');
+  document.getElementById('tmdbOutils').classList.remove('hidden');
+}
+function adminPublierFilm() {
+  if (!filmSelection || !currentUser || currentUser.role !== 'admin') return;
+  const lien = document.getElementById('filmLien').value.trim();
+  if (lien && !lienSur(lien)) { showToast('⚠️ Le lien doit commencer par https://'); return; }
+  const cinemas = cinemasCoches();
+  if (!cinemas.length) { showToast('⚠️ Cochez au moins un cinéma'); return; }
+  const film = Object.assign({}, filmSelection, { cinemas: cinemas, lien: lien,
+                 jusquau: document.getElementById('filmJusquau').value || '', ts: Date.now() });
+  db.ref('films').push(film).then(() => {
+    showToast('✅ Film publié'); annulerFilm();
+    document.getElementById('tmdbResultats').innerHTML = '';
+    renderFilms();
+  }).catch(() => showToast('⚠️ Publication impossible'));
+}
+function adminSupprimerFilm(id) {
+  if (!confirm('Retirer ce film de l\'affiche ?')) return;
+  db.ref('films/' + id).remove().then(() => { showToast('🗑️ Film retiré'); renderFilms(); })
+    .catch(() => showToast('⚠️ Suppression impossible'));
 }
 
 /* ===================== MON PROFIL ===================== */
