@@ -152,6 +152,18 @@ const AGENDA_FRANCE = [
   { day:1,  month:'Novembre', year:2026, name:'Toussaint 🕯️',          detail:'🇫🇷 Jour des défunts', type:'ferie' },
   { day:11, month:'Novembre', year:2026, name:'Armistice 1918 🪖',      detail:'🇫🇷 Commémoration fin de la Grande Guerre', type:'ferie' },
   { day:25, month:'Décembre', year:2026, name:'Noël 🎄',               detail:'🇫🇷 Jour férié national', type:'ferie' },
+  // Jours fériés 2027 (Pâques calculé : 2027-03-28)
+  { day:1, month:'Janvier', year:2027, name:"Jour de l'An 🎆", detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:29, month:'Mars', year:2027, name:'Lundi de Pâques 🐣', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:1, month:'Mai', year:2027, name:'Fête du Travail 💐', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:8, month:'Mai', year:2027, name:'Victoire 1945 🎖️', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:6, month:'Mai', year:2027, name:'Ascension ✝️', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:17, month:'Mai', year:2027, name:'Lundi de Pentecôte 🕊️', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:14, month:'Juillet', year:2027, name:'Fête Nationale 🇫🇷', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:15, month:'Août', year:2027, name:'Assomption ⛪', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:1, month:'Novembre', year:2027, name:'Toussaint 🕯️', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:11, month:'Novembre', year:2027, name:'Armistice 1918 🪖', detail:'🇫🇷 Jour férié national', type:'ferie' },
+  { day:25, month:'Décembre', year:2027, name:'Noël 🎄', detail:'🇫🇷 Jour férié national', type:'ferie' },
 ];
 
 const AGENDA_INDE = [
@@ -207,7 +219,10 @@ const AGENDA_CIVIL = [
   { day:22, month:'Mars',    year:2026, name:'Élections Municipales — 2ème tour', detail:'🗳️ Val d\'Oise · Si ballottage', type:'election' },
   { day:1,  month:'Avril',   year:2026, name:'Ouverture droits Pôle Emploi', detail:'📋 Vérification et renouvellement des droits CAF / France Travail', type:'admin' },
   { day:15, month:'Septembre',year:2026, name:'Rentrée scolaire Val d\'Oise', detail:'🎒 Rentrée des classes — académie de Versailles', type:'admin' },
-  { day:1,  month:'Novembre', year:2026, name:'Passage heure d\'hiver', detail:'⏰ Reculer les montres d\'1 heure à 3h → 2h', type:'admin' },
+  // Changements d'heure : dernier dimanche de mars et d'octobre (règle européenne)
+  { day:25, month:'Octobre', year:2026, name:"Passage à l'heure d'hiver", detail:"⏰ Dans la nuit de samedi à dimanche : à 3h il sera 2h (on recule d'1 heure)", type:'admin' },
+  { day:28, month:'Mars', year:2027, name:"Passage à l'heure d'été", detail:"⏰ Dans la nuit de samedi à dimanche : à 2h il sera 3h (on avance d'1 heure)", type:'admin' },
+  { day:31, month:'Octobre', year:2027, name:"Passage à l'heure d'hiver", detail:"⏰ Dans la nuit de samedi à dimanche : à 3h il sera 2h (on recule d'1 heure)", type:'admin' },
 ];
 
 
