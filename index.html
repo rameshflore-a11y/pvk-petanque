@@ -197,7 +197,7 @@
           <p class="club-text">Bienvenue au club Pétanque Vetri Kazhagam d'Osny ! Notre club, fondé dans l'esprit de partage et de convivialité, réunit des passionnés de pétanque de tous niveaux. Que vous soyez débutant ou confirmé, vous trouverez ici une famille accueillante.</p>
           <p class="club-text mt-8">Venez nous rejoindre sur nos terrains de la Chaussée Jules César pour des entraînements conviviaux et des tournois animés !</p>
         </div>
-        <div class="card">
+        <div class="card hidden" id="bureauCard">
           <div class="section-title mb-8">Le Bureau</div>
           <div id="bureauList"></div>
         </div>
@@ -400,14 +400,10 @@
 
           <!-- Recherche -->
           <div class="search-wrap">
-            <input type="text" id="membreSearch" placeholder="🔍 Rechercher par nom ou fonction…" oninput="filterMembres()" class="search-input"/>
+            <input type="text" id="membreSearch" placeholder="🔍 Rechercher par nom…" oninput="filterMembres()" class="search-input"/>
           </div>
 
           <!-- Filtre par statut -->
-          <div class="membre-filter-row">
-            <button class="filter-btn active" id="filterTous"    onclick="setMembreFilter('tous')">Tous</button>
-            <button class="filter-btn"         id="filterBureau"  onclick="setMembreFilter('bureau')">⭐ Bureau</button>
-          </div>
 
           <!-- Liste -->
           <div id="membresContainer"></div>
@@ -506,7 +502,7 @@
           <div class="form-group"><label>Email (facultatif)</label><input type="email" id="pfEmail"/></div>
           <button type="submit" class="btn-primary btn-full">💾 Enregistrer</button>
         </form>
-        <p class="pf-note" style="text-align:center;margin-top:10px">Dans l'annuaire, les autres adhérents voient uniquement votre nom, votre fonction et votre portable.</p>
+        <p class="pf-note" style="text-align:center;margin-top:10px">Dans l'annuaire, les autres adhérents voient uniquement votre nom et votre portable.</p>
       </div>
     </div>
 
@@ -566,7 +562,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=24"></script>
+<script src="app.js?v=26"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

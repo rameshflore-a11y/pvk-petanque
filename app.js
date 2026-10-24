@@ -233,7 +233,9 @@ let currentUser = null;
 let currentPage = 'login';
 let agendaMode = 'club';
 
-const BUREAU_FONCTIONS = ['Président','Vice-Président','Secrétaire','Trésorier','Capitaine'];
+// Pas de bureau pour le moment : tout le monde est adhérent.
+// Pour réactiver un jour : const BUREAU_FONCTIONS = ['Président','Vice-Président','Secrétaire','Trésorier','Capitaine'];
+const BUREAU_FONCTIONS = [];
 
 const getUsers       = () => { try { return JSON.parse(localStorage.getItem('pvk_users')||'[]'); } catch { return []; } };
 const saveUsers      = u  => localStorage.setItem('pvk_users', JSON.stringify(u));
@@ -582,7 +584,9 @@ function renderAccueil() {
 /* ===================== CLUB ===================== */
 function renderClub() {
   const c = document.getElementById('bureauList');
-  if (!canAccess('membres')) { c.innerHTML = '<p class="vide">Le bureau est visible par les adhérents.</p>'; return; }
+  const carte = document.getElementById('bureauCard');
+  carte.classList.add('hidden');   // la carte « Le Bureau » n'apparaît que s'il y a des membres du bureau
+  if (!canAccess('membres')) { c.innerHTML = ''; return; }
   c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
   fbList('annuaire', function(list) {
     if (list === null) { c.innerHTML = '<p class="vide">Bureau indisponible.</p>'; return; }
@@ -596,7 +600,8 @@ function renderClub() {
           <span class="membre-fonction bureau">${escapeHtml(u.fonction)}</span>
           ${u.tel?`<div class="membre-row"><span>📞</span><a href="tel:${escapeHtml(u.tel)}" class="link-red">${escapeHtml(u.tel)}</a></div>`:''}
         </div>
-      </div>`).join('') || '<p class="vide">Aucun membre du bureau enregistré.</p>';
+      </div>`).join('');
+    carte.classList.toggle('hidden', !bureau.length);
   });
 }
 
@@ -1255,9 +1260,12 @@ function renderMembres() {
 
 function renderMembreStats() {
   const bureau = annuaireCache.filter(u => BUREAU_FONCTIONS.includes(u.fonction||'')).length;
+  // Tant que personne n'a de fonction au bureau, on n'affiche ni le compteur ni le filtre « Bureau »
+  document.getElementById('filterBureau')?.classList.toggle('hidden', !bureau);
+  if (!bureau && membreFilter === 'bureau') membreFilter = 'tous';
   document.getElementById('membreStats').innerHTML = `
     <div class="mstat actif"><span class="mstat-val">${annuaireCache.length}</span><span class="mstat-lbl">Adhérents</span></div>
-    <div class="mstat bureau"><span class="mstat-val">${bureau}</span><span class="mstat-lbl">Bureau</span></div>
+    ${bureau ? `<div class="mstat bureau"><span class="mstat-val">${bureau}</span><span class="mstat-lbl">Bureau</span></div>` : ''}
   `;
 }
 
@@ -1294,7 +1302,6 @@ function buildMembreCard(u) {
       <div class="mdc-avatar ${isBureau?'gold':''}">${initials(u.prenom, u.nom)}</div>
       <div class="mdc-identity">
         <div class="mdc-name">${escapeHtml(u.prenom||'')} ${escapeHtml(u.nom||'')}</div>
-        <div class="mdc-meta"><span class="membre-fonction ${isBureau?'bureau':''}">${escapeHtml(u.fonction||'Membre')}</span></div>
       </div>
     </div>
     ${tel ? `<div class="mdc-contacts">
@@ -1379,9 +1386,7 @@ function renderAdminFinance(users) {
       '<div class="fin-ident"><div class="admin-member-name">' + u.prenom + ' ' + u.nom + '</div>' +
       '<div class="fin-meta">📞 ' + (u.tel || '—') + ' · 🎂 ' + formatDateFr(u.naissance) + '</div>' +
       '<div class="fin-meta">📍 ' + (u.adresse || '—') + '</div>' +
-      '<select class="fin-fonction" onchange="adminChangerFonction(\'' + u.id + '\', this.value)">' +
-        ['Membre'].concat(BUREAU_FONCTIONS).map(function(f){ return '<option' + ((u.fonction || 'Membre') === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') +
-      '</select></div></div>' +
+      '</div></div>' +
       buildGrilleMois(u.paiements, u.id, true) +
       '</div>';
   }).join('');
