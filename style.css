@@ -834,3 +834,9 @@ input:disabled { background: var(--bg); color: var(--text-muted); }
 .fin-fonction { margin-top: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: .8rem; background: #fff; font-family: inherit; }
 /* Champ date : ne déborde plus sur iPhone */
 input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; }
+
+.cal-type.fete { background:#FFEDD5; color:#9A3412; }
+/* 4 onglets d'agenda sur une ligne */
+#page-agenda .tabs { display:flex; gap:4px; }
+#page-agenda .tabs .tab { flex:1; min-width:0; padding-left:4px; padding-right:4px; font-size:.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-type.heure { background:#E0F2FE; color:#075985; }

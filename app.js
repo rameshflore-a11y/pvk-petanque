@@ -166,47 +166,38 @@ const AGENDA_FRANCE = [
   { day:25, month:'Décembre', year:2027, name:'Noël 🎄', detail:'🇫🇷 Jour férié national', type:'ferie' },
 ];
 
+// Fêtes indiennes et tamoules — dates vérifiées en octobre 2026 (Drik Panchang, CalendarLabs)
 const AGENDA_INDE = [
-  // ── 2025 ──
-  { day:14, month:'Janvier',   year:2025, name:'Pongal 🌾',                     detail:'🇮🇳 Fête des récoltes tamoule (Tai Pongal) — 4 jours du 14 au 17 jan', type:'ferie' },
-  { day:14, month:'Janvier',   year:2025, name:'Makar Sankranti 🪁',            detail:'🇮🇳 Entrée du soleil dans le Capricorne — cerfs-volants', type:'ferie' },
-  { day:26, month:'Janvier',   year:2025, name:"Fête de la République 🇮🇳",    detail:'🇮🇳 76e fête de la République de l\'Inde — New Delhi', type:'ferie' },
-  { day:26, month:'Février',   year:2025, name:'Maha Shivaratri 🕉️',           detail:'🇮🇳 Grande nuit de Shiva — jeûne et prières nocturnes', type:'ferie' },
-  { day:13, month:'Mars',      year:2025, name:'Holika Dahan 🔥',               detail:'🇮🇳 Bûcher de Holika la veille de Holi', type:'ferie' },
-  { day:14, month:'Mars',      year:2025, name:'Holi 🎨',                       detail:'🇮🇳 Fête des couleurs — célébration du printemps', type:'ferie' },
-  { day:30, month:'Mars',      year:2025, name:'Eid ul-Fitr 🌙',                detail:'🇮🇳 Fin du Ramadan — fête de la rupture du jeûne', type:'ferie' },
-  { day:6,  month:'Avril',     year:2025, name:'Ram Navami 🙏',                 detail:'🇮🇳 Naissance du Seigneur Ram — 9e jour de Chaitra', type:'ferie' },
-  { day:12, month:'Avril',     year:2025, name:'Hanuman Jayanti 🐒',            detail:'🇮🇳 Naissance du Seigneur Hanuman', type:'ferie' },
-  { day:13, month:'Avril',     year:2025, name:'Baisakhi / Vaisakhi 🌾',        detail:'🇮🇳 Nouvel An sikh et punjabi — récolte du blé', type:'ferie' },
-  { day:14, month:'Avril',     year:2025, name:'Puthandu 🎊 — Nouvel An Tamil', detail:'🇮🇳 Premier jour du mois tamoul Chithirai — Varusha Pirappu', type:'ferie' },
-  { day:12, month:'Mai',       year:2025, name:'Buddha Purnima 🌕',             detail:'🇮🇳 Naissance, illumination et mort du Bouddha — pleine lune', type:'ferie' },
-  { day:7,  month:'Juin',      year:2025, name:'Eid ul-Adha 🐑',                detail:'🇮🇳 Fête du sacrifice — fin du pèlerinage à La Mecque', type:'ferie' },
-  { day:27, month:'Juin',      year:2025, name:'Rath Yatra 🛕',                 detail:'🇮🇳 Procession du char de Jagannath — Puri (Odisha)', type:'ferie' },
-  { day:15, month:'Août',      year:2025, name:"Fête de l'Indépendance 🇮🇳",   detail:'🇮🇳 78e anniversaire de l\'indépendance de l\'Inde (1947)', type:'ferie' },
-  { day:16, month:'Août',      year:2025, name:'Janmashtami 🎶',                detail:'🇮🇳 Naissance du Seigneur Krishna — minuit de célébration', type:'ferie' },
-  { day:27, month:'Août',      year:2025, name:'Ganesh Chaturthi 🐘',           detail:'🇮🇳 Fête de Ganesh — 10 jours de festivités', type:'ferie' },
-  { day:5,  month:'Septembre', year:2025, name:'Onam 🌺',                       detail:'🇮🇳 Fête nationale du Kerala — retour du roi Mahabali', type:'ferie' },
-  { day:2,  month:'Octobre',   year:2025, name:'Gandhi Jayanti 🕊️',            detail:'🇮🇳 155e anniversaire du Mahatma Gandhi — journée mondiale de la non-violence', type:'ferie' },
-  { day:2,  month:'Octobre',   year:2025, name:'Navratri — Début 💃',           detail:'🇮🇳 9 nuits de dévotion à la Déesse Durga (2 au 11 oct)', type:'ferie' },
-  { day:12, month:'Octobre',   year:2025, name:'Dussehra / Vijayadasami ⚡',    detail:'🇮🇳 Victoire de Rama sur Ravana — le bien sur le mal', type:'ferie' },
-  { day:20, month:'Octobre',   year:2025, name:'Diwali 🪔',                     detail:'🇮🇳 Fête des lumières — Lakshmi Puja (20-24 oct)', type:'ferie' },
-  { day:5,  month:'Novembre',  year:2025, name:'Guru Nanak Jayanti 🌟',         detail:'🇮🇳 556e anniversaire du fondateur du Sikhisme', type:'ferie' },
-  { day:25, month:'Décembre',  year:2025, name:'Noël 🎄',                       detail:'🇮🇳 Célébré dans tout le pays — Goa, Kerala, Tamil Nadu', type:'ferie' },
-  // ── 2026 ──
-  { day:14, month:'Janvier',   year:2026, name:'Pongal 🌾',                     detail:'🇮🇳 Nouvel An tamoul agricole — Tai Pongal (14-17 jan)', type:'ferie' },
-  { day:26, month:'Janvier',   year:2026, name:"Fête de la République 🇮🇳",    detail:'🇮🇳 77e fête de la République de l\'Inde', type:'ferie' },
-  { day:15, month:'Février',   year:2026, name:'Maha Shivaratri 🕉️',           detail:'🇮🇳 Grande nuit de Shiva — jeûne et veille nocturne', type:'ferie' },
-  { day:3,  month:'Mars',      year:2026, name:'Holi 🎨',                       detail:'🇮🇳 Fête des couleurs — célébration du printemps', type:'ferie' },
-  { day:20, month:'Mars',      year:2026, name:'Eid ul-Fitr 🌙',                detail:'🇮🇳 Fin du Ramadan (date approximative selon lune)', type:'ferie' },
-  { day:14, month:'Avril',     year:2026, name:'Puthandu 🎊 — Nouvel An Tamil', detail:'🇮🇳 Premier jour du mois Chithirai — Varusha Pirappu 2026', type:'ferie' },
-  { day:15, month:'Août',      year:2026, name:"Fête de l'Indépendance 🇮🇳",   detail:'🇮🇳 79e anniversaire de l\'indépendance de l\'Inde', type:'ferie' },
-  { day:22, month:'Août',      year:2026, name:'Ganesh Chaturthi 🐘',           detail:'🇮🇳 Fête de Ganesh — 10 jours de festivités', type:'ferie' },
-  { day:2,  month:'Octobre',   year:2026, name:'Gandhi Jayanti 🕊️',            detail:'🇮🇳 Anniversaire du Mahatma Gandhi', type:'ferie' },
-  { day:11, month:'Octobre',   year:2026, name:'Navratri — Début 💃',           detail:'🇮🇳 9 nuits de dévotion à la Déesse Durga (11-19 oct)', type:'ferie' },
-  { day:20, month:'Octobre',   year:2026, name:'Dussehra / Vijayadasami ⚡',    detail:'🇮🇳 Victoire du bien sur le mal — 10e jour de Navratri', type:'ferie' },
-  { day:29, month:'Octobre',   year:2026, name:'Diwali 🪔',                     detail:'🇮🇳 Fête des lumières — Lakshmi Puja (29 oct - 2 nov)', type:'ferie' },
-  { day:15, month:'Novembre',  year:2026, name:'Guru Nanak Jayanti 🌟',         detail:'🇮🇳 Anniversaire du fondateur du Sikhisme', type:'ferie' },
-  { day:25, month:'Décembre',  year:2026, name:'Noël 🎄',                       detail:'🇮🇳 Célébré dans tout le pays', type:'ferie' },
+  { day:6, month:'Novembre', year:2026, name:'Dhanteras 🪙', detail:'🇮🇳 Début des 5 jours de Diwali', type:'fete' },
+  { day:8, month:'Novembre', year:2026, name:'Diwali / Deepavali 🪔', detail:'🇮🇳 Fête des lumières — Lakshmi Puja', type:'fete' },
+  { day:24, month:'Novembre', year:2026, name:'Karthigai Deepam 🪔', detail:'🇮🇳 Fête des lampes tamoule — Tiruvannamalai', type:'fete' },
+  { day:24, month:'Novembre', year:2026, name:'Guru Nanak Jayanti 🌟', detail:'🇮🇳 Anniversaire du fondateur du sikhisme', type:'fete' },
+  { day:25, month:'Décembre', year:2026, name:'Noël 🎄', detail:'🇮🇳 Jour férié en Inde', type:'ferie' },
+  { day:15, month:'Janvier', year:2027, name:'Thai Pongal 🌾', detail:'🇮🇳 Fête tamoule des récoltes (Bhogi la veille, Mattu Pongal le lendemain)', type:'fete' },
+  { day:22, month:'Janvier', year:2027, name:'Thaipusam 🙏', detail:'🇮🇳 Fête de Murugan — grande fête tamoule', type:'fete' },
+  { day:26, month:'Janvier', year:2027, name:'Fête de la République 🇮🇳', detail:'🇮🇳 Jour férié national', type:'ferie' },
+  { day:6, month:'Mars', year:2027, name:'Maha Shivaratri 🕉️', detail:'🇮🇳 Grande nuit de Shiva — jeûne et veillée', type:'fete' },
+  { day:22, month:'Mars', year:2027, name:'Holi 🎨', detail:'🇮🇳 Fête des couleurs (Holika Dahan la veille au soir ; certains calendriers indiquent le 23)', type:'fete' },
+  { day:7, month:'Avril', year:2027, name:'Ugadi / Gudi Padwa 🌼', detail:'🇮🇳 Nouvel an télougou, kannada et marathi', type:'fete' },
+  { day:14, month:'Avril', year:2027, name:'Puthandu 🎊 — Nouvel An tamoul', detail:'🇮🇳 Premier jour du mois de Chithirai', type:'fete' },
+  { day:15, month:'Avril', year:2027, name:'Ram Navami 🏹', detail:'🇮🇳 Naissance de Rama', type:'fete' },
+  { day:15, month:'Août', year:2027, name:'Fête de l\'Indépendance 🇮🇳', detail:'🇮🇳 Jour férié national', type:'ferie' },
+  { day:17, month:'Août', year:2027, name:'Raksha Bandhan 🧵', detail:'🇮🇳 Fête des frères et sœurs', type:'fete' },
+  { day:4, month:'Septembre', year:2027, name:'Ganesh Chaturthi 🐘', detail:'🇮🇳 Fête de Ganesh — 10 jours de festivités', type:'fete' },
+  { day:30, month:'Septembre', year:2027, name:'Navratri — début 💃', detail:'🇮🇳 9 nuits dédiées à la déesse Durga', type:'fete' },
+  { day:2, month:'Octobre', year:2027, name:'Gandhi Jayanti 🕊️', detail:'🇮🇳 Anniversaire du Mahatma Gandhi — jour férié', type:'ferie' },
+  { day:9, month:'Octobre', year:2027, name:'Dussehra / Vijayadashami ⚡', detail:'🇮🇳 Victoire du bien sur le mal', type:'fete' },
+  { day:29, month:'Octobre', year:2027, name:'Diwali / Deepavali 🪔', detail:'🇮🇳 Fête des lumières — Lakshmi Puja (Dhanteras le 27)', type:'fete' },
+  { day:14, month:'Novembre', year:2027, name:'Guru Nanak Jayanti 🌟', detail:'🇮🇳 Anniversaire du fondateur du sikhisme', type:'fete' },
+  { day:12, month:'Décembre', year:2027, name:'Karthigai Deepam 🪔', detail:'🇮🇳 Fête des lampes tamoule', type:'fete' },
+  { day:25, month:'Décembre', year:2027, name:'Noël 🎄', detail:'🇮🇳 Jour férié en Inde', type:'ferie' },
+];
+
+// Fêtes musulmanes — prévisions pour la France, à confirmer par la Grande Mosquée de Paris / le CFCM
+const AGENDA_MUSULMAN = [
+  { day:8, month:'Février', year:2027, name:'Début du Ramadan 🌙', detail:'☪️ Premier jour de jeûne (la veille au soir : première prière de tarawih) — Date prévisionnelle, à ±1 jour selon l\'observation de la lune', type:'fete' },
+  { day:9, month:'Mars', year:2027, name:'Aïd el-Fitr 🎉', detail:'☪️ Fin du Ramadan — mardi 9 ou mercredi 10 mars selon la lune', type:'fete' },
+  { day:16, month:'Mai', year:2027, name:'Aïd el-Adha (Aïd el-Kébir) 🐑', detail:'☪️ Fête du sacrifice — dimanche 16 ou lundi 17 mai selon la lune', type:'fete' },
 ];
 
 const AGENDA_CIVIL = [
@@ -220,9 +211,9 @@ const AGENDA_CIVIL = [
   { day:1,  month:'Avril',   year:2026, name:'Ouverture droits Pôle Emploi', detail:'📋 Vérification et renouvellement des droits CAF / France Travail', type:'admin' },
   { day:15, month:'Septembre',year:2026, name:'Rentrée scolaire Val d\'Oise', detail:'🎒 Rentrée des classes — académie de Versailles', type:'admin' },
   // Changements d'heure : dernier dimanche de mars et d'octobre (règle européenne)
-  { day:25, month:'Octobre', year:2026, name:"Passage à l'heure d'hiver", detail:"⏰ Dans la nuit de samedi à dimanche : à 3h il sera 2h (on recule d'1 heure)", type:'admin' },
-  { day:28, month:'Mars', year:2027, name:"Passage à l'heure d'été", detail:"⏰ Dans la nuit de samedi à dimanche : à 2h il sera 3h (on avance d'1 heure)", type:'admin' },
-  { day:31, month:'Octobre', year:2027, name:"Passage à l'heure d'hiver", detail:"⏰ Dans la nuit de samedi à dimanche : à 3h il sera 2h (on recule d'1 heure)", type:'admin' },
+  { day:25, month:'Octobre', year:2026, name:"Passage à l'heure d'hiver", detail:"⏰ Dans la nuit de samedi à dimanche : à 3h il sera 2h (on recule d'1 heure)", type:'heure' },
+  { day:28, month:'Mars', year:2027, name:"Passage à l'heure d'été", detail:"⏰ Dans la nuit de samedi à dimanche : à 2h il sera 3h (on avance d'1 heure)", type:'heure' },
+  { day:31, month:'Octobre', year:2027, name:"Passage à l'heure d'hiver", detail:"⏰ Dans la nuit de samedi à dimanche : à 3h il sera 2h (on recule d'1 heure)", type:'heure' },
 ];
 
 
@@ -656,7 +647,7 @@ function genererActusAuto(callback) {
         });
         // 🔔 Rappels : jours fériés, changement d'heure, démarches (7 prochains jours)
         AGENDA_FRANCE_COMPLET.forEach(function(ev) {
-          if (!['ferie','admin','election','impot'].includes(ev.type)) return;
+          if (!['ferie','admin','election','impot','heure'].includes(ev.type)) return;
           const dt = dateEvenement(ev);
           if (dt < auj || dt >= dans7) return;
           out.push({ id: 'auto-fr-' + ev.year + ev.month + ev.day + ev.type, auto: true, type: 'info', badge: '🔔 Rappel',
@@ -740,7 +731,7 @@ function aVenir(list) {
 
 function switchAgenda(mode) {
   agendaMode = mode;
-  const ids = { club:'tabAgendaClub', france:'tabAgendaFr', inde:'tabAgendaInde' };
+  const ids = { club:'tabAgendaClub', france:'tabAgendaFr', inde:'tabAgendaInde', musulman:'tabAgendaMus' };
   Object.keys(ids).forEach(m => {
     document.getElementById(ids[m])?.classList.toggle('active', m === mode);
   });
@@ -752,7 +743,7 @@ function renderAgenda() {
   document.getElementById('agendaAdminForm').classList.toggle('hidden', !(isAdmin && agendaMode === 'club'));
   const c = document.getElementById('agendaContainer');
   if (agendaMode !== 'club') {
-    afficherAgenda(aVenir(agendaMode === 'inde' ? AGENDA_INDE : AGENDA_FRANCE_COMPLET), false);
+    afficherAgenda(aVenir(agendaMode === 'inde' ? AGENDA_INDE : agendaMode === 'musulman' ? AGENDA_MUSULMAN : AGENDA_FRANCE_COMPLET), false);
     return;
   }
   c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
@@ -768,7 +759,7 @@ function renderAgenda() {
 }
 
 function afficherAgenda(data, avecSuppression) {
-  const typeLabel = { tournoi:'Tournoi', special:'Événement', ferie:'Jour Férié', vacances:'Vacances 🏫', admin:'Démarche', impot:'Fiscal', election:'Élection', entrainement:'Entraînement', reunion:'Réunion' };
+  const typeLabel = { heure:'Changement d\'heure', fete:'Fête', tournoi:'Tournoi', special:'Événement', ferie:'Jour Férié', vacances:'Vacances 🏫', admin:'Démarche', impot:'Fiscal', election:'Élection', entrainement:'Entraînement', reunion:'Réunion' };
   let lastMonth = '';
   document.getElementById('agendaContainer').innerHTML = data.length ? data.map(ev => {
     let h = '';
