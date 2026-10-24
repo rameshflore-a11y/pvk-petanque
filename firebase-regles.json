@@ -13,15 +13,81 @@
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('admins').child(auth.uid).val() === true)",
         ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-        "id":        { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.val() === $uid" },
-        "email":     { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 120" },
-        "prenom":    { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 80" },
-        "nom":       { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 80" },
-        "tel":       { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 30" },
-        "naissance": { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length <= 10" },
-        "adresse":   { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 200" },
-        "fonction":  { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length < 40" },
-        "inscritLe": { ".write": "auth != null && auth.uid === $uid", ".validate": "newData.isString() && newData.val().length <= 10" }
+        "id": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.val() === $uid"
+        },
+        "email": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 120"
+        },
+        "prenom": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 80"
+        },
+        "nom": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 80"
+        },
+        "tel": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 30"
+        },
+        "naissance": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 11"
+        },
+        "adresse": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 200"
+        },
+        "fonction": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 40"
+        },
+        "inscritLe": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 11"
+        }
+      }
+    },
+    "annuaire": {
+      ".read": "auth != null && (root.child('admins').child(auth.uid).val() === true || root.child('users').child(auth.uid).child('abonnement').child('statut').val() === 'actif')",
+      "$uid": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        "prenom": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 80"
+        },
+        "nom": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 80"
+        },
+        "tel": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 30"
+        },
+        "fonction": {
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.isString() && newData.val().length < 40"
+        },
+        "actif": {
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+    "news": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$id": {
+        ".validate": "newData.hasChildren(['title', 'body', 'ts'])"
+      }
+    },
+    "agenda": {
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+      "$id": {
+        ".validate": "newData.hasChildren(['date', 'name'])"
       }
     }
   }

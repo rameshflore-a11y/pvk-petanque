@@ -29,8 +29,27 @@ function fbSaveProfil(user) {
   if (!db) return Promise.reject(new Error('hors ligne'));
   var copy = {};
   CHAMPS_PROFIL.forEach(function(k){ if (user[k] !== undefined && user[k] !== null) copy[k] = user[k]; });
-  return db.ref('users/' + user.id).update(copy);
+  return Promise.all([
+    db.ref('users/' + user.id).update(copy),
+    db.ref('annuaire/' + user.id).update(ficheAnnuaire(user))
+  ]);
 }
+// Fiche publique de l'annuaire : pas d'adresse, pas de date de naissance, pas d'email
+function ficheAnnuaire(u) {
+  return { prenom: u.prenom || '', nom: u.nom || '', tel: u.tel || '', fonction: u.fonction || 'Membre' };
+}
+// Lire une liste Firebase (news, agenda, annuaire) — callback(null) si refusé / hors ligne
+function fbList(path, callback) {
+  if (!db) { callback(null); return; }
+  db.ref(path).once('value')
+    .then(function(snap) {
+      var list = [];
+      snap.forEach(function(child) { var v = child.val() || {}; v.id = child.key; list.push(v); });
+      callback(list);
+    })
+    .catch(function(e) { console.warn(path + ':', e.message); callback(null); });
+}
+
 // Écriture admin : abonnement (validation)
 function fbSyncUser(user) {
   if (!db) return;
@@ -74,7 +93,7 @@ function fbLoadProfil(authUser) {
     db.ref('users/' + authUser.uid).once('value'),
     db.ref('admins/' + authUser.uid).once('value')
   ]).then(function(res) {
-    var u = res[0].val() || { id: authUser.uid, email: authUser.email, prenom: '', nom: '' };
+    var u = res[0].val() || { id: authUser.uid, email: estEmailTechnique(authUser.email) ? '' : authUser.email, prenom: '', nom: '' };
     u.id = authUser.uid;
     delete u.password;
     u.role = res[1].val() ? 'admin' : 'membre';
@@ -86,25 +105,7 @@ function fbLoadProfil(authUser) {
 
 /* ===================== DONNÉES ===================== */
 
-const NEWS = [
-  { id:1, type:'urgent', accent:'', title:'🏆 Championnat du Val d\'Oise 2025 — Résultats', body:'Le Championnat Départemental du Val d\'Oise s\'est tenu le 25 mai à Cergy. Nos joueurs ont brillamment représenté le club PVK en atteignant les demi-finales en triplettes. Félicitations à toute l\'équipe pour cette belle performance !', date:'26 Mai 2025' },
-  { id:2, type:'tournoi', accent:'gold', title:'🎯 Concours de pétanque — Fête de la Musique', body:'À l\'occasion de la Fête de la Musique, le club organise un grand concours convivial le 21 juin à partir de 14h sur les terrains de la Chaussée Jules César. Inscription par équipes de 2 ou 3. Ambiance garantie, rafraîchissements offerts !', date:'5 Juin 2025' },
-  { id:3, type:'info', accent:'green', title:'📋 Saison 2026-2027 — Cotisation 60€/an', body:'La saison 2026-2027 est ouverte ! La cotisation est de 60€ par an, soit 5€ par mois, à régler en espèces auprès du bureau. Vous pouvez suivre vos paiements mois par mois dans « Mon abonnement ». Bienvenue à tous les nouveaux adhérents !', date:'Octobre 2026' },
-  { id:4, type:'annonce', accent:'', title:'📺 La pétanque aux Jeux Olympiques — Suivez l\'actualité', body:'La Fédération Française de Pétanque et Jeu Provençal (FFPJP) milite activement pour l\'intégration de la pétanque aux Jeux Olympiques. Le sport compte plus de 600 000 licenciés en France et se pratique dans 160 pays. Soutenons notre sport ensemble !', date:'20 Mai 2025' },
-  { id:5, type:'info', accent:'green', title:'🌟 Initiation pétanque — Portes ouvertes', body:'Le club Pétanque Vetri Kazhagam organise des séances d\'initiation gratuites chaque samedi matin de 10h à 12h. Venez découvrir la pétanque en famille ou entre amis ! Boules fournies, aucun équipement nécessaire. Terrains : Chaussée Jules César, 95520 Osny.', date:'15 Mai 2025' },
-];
 
-const AGENDA_CLUB = [
-  { day:14, month:'Juin', year:2025, name:'Tournoi Interne Été', detail:'📍 Terrain A — 9h00 · Doublettes', type:'tournoi' },
-  { day:21, month:'Juin', year:2025, name:'Fête de la Pétanque', detail:'🎉 Terrain principal — 15h00', type:'special' },
-  { day:5,  month:'Juillet', year:2025, name:'Championnat Régional', detail:'📍 Stade Municipal — 8h30', type:'tournoi' },
-  { day:19, month:'Juillet', year:2025, name:'Tournoi Mixte', detail:'📍 Terrain principal — 10h00', type:'tournoi' },
-  { day:2,  month:'Août', year:2025, name:'Tournoi Vacances', detail:'📍 Terrain A & B — 9h00', type:'tournoi' },
-  { day:6,  month:'Septembre', year:2025, name:'Reprise officielle', detail:'📍 Terrain principal — 10h00', type:'special' },
-  { day:20, month:'Septembre', year:2025, name:'Coupe du Club', detail:'📍 Tous terrains — 9h00', type:'tournoi' },
-  { day:18, month:'Octobre', year:2025, name:'Tournoi Automne', detail:'📍 Terrain A — 9h00 · Triplettes', type:'tournoi' },
-  { day:1,  month:'Juin', year:2026, name:'Début saison 2026-2027', detail:'🎯 Renouvellement des adhésions', type:'special' },
-];
 
 const AGENDA_FRANCE = [
   // ── 2025 ──
@@ -208,46 +209,18 @@ const AGENDA_CIVIL = [
   { day:1,  month:'Novembre', year:2026, name:'Passage heure d\'hiver', detail:'⏰ Reculer les montres d\'1 heure à 3h → 2h', type:'admin' },
 ];
 
-const FILMS = [
-  { titre:"Mission: Impossible – The Final Reckoning", genre:'Action / Espionnage', duree:'2h45', synopsis:"Ethan Hunt affronte une menace qui pourrait détruire toute civilisation. Le dernier chapitre de la saga Mission Impossible.", note:'⭐⭐⭐⭐½', couleur:'#1A1A2E', couleur2:'#C41E3A', emoji:'💣' },
-  { titre:'Jurassic World Rebirth', genre:'Aventure / SF', duree:'2h10', synopsis:"Cinq ans après la chute de Jurassic World. Une nouvelle équipe part en mission secrète pour sauver l'espèce humaine.", note:'⭐⭐⭐⭐', couleur:'#1B4332', couleur2:'#52B788', emoji:'🦕' },
-  { titre:'The Fantastic Four', genre:'Super-Héros / Action', duree:'2h05', synopsis:"Marvel présente ses quatre héros iconiques pour la première fois dans le MCU. Une aventure cosmique époustouflante.", note:'⭐⭐⭐⭐', couleur:'#1E3A5F', couleur2:'#FFD700', emoji:'🚀' },
-  { titre:'Vaazha (Tamil Cinema)', genre:'Drame / Romance', duree:'2h20', synopsis:"Un film tamoul émouvant sur l'amour, la famille et les liens qui unissent deux familles de générations différentes.", note:'⭐⭐⭐⭐½', couleur:'#4A1942', couleur2:'#FF6B6B', emoji:'🌺' },
-  { titre:'L\'Amour Ouf', genre:'Romance / Drame', duree:'2h30', synopsis:"Adèle Exarchopoulos et François Civil dans une histoire d'amour intense qui traverse les décennies dans la France du Nord.", note:'⭐⭐⭐⭐', couleur:'#2D1B69', couleur2:'#E040FB', emoji:'❤️' },
-  { titre:'Karate Kid: Legends', genre:'Arts Martiaux / Famille', duree:'1h55', synopsis:"Li Fang se retrouve à New York où il rencontre Daniel LaRusso. Un nouveau chapitre de la légendaire saga Karate Kid.", note:'⭐⭐⭐½', couleur:'#7B3F00', couleur2:'#FFB300', emoji:'🥋' },
-];
 
-const EMPLOIS = [
-  { poste:'Agent de sécurité', entreprise:'Securitas', lieu:'Cergy (95)', type:'CDI', detail:'Expérience souhaitée. Permis B requis. Horaires décalés. Salaire : 1 800€/mois.', date:'02/06/2025' },
-  { poste:'Caissier(ère)', entreprise:'Carrefour Osny', lieu:'Osny (95520)', type:'CDI', detail:'Temps partiel 30h/semaine. Expérience en caisse souhaitée. Disponibilité week-ends.', date:'30/05/2025' },
-  { poste:'Aide-soignant(e)', entreprise:'EHPAD Les Genêts', lieu:'Pontoise (95)', type:'CDI', detail:'Diplôme AS exigé. Travail en équipe soignante. Horaires tournants jour/nuit.', date:'28/05/2025' },
-  { poste:'Chauffeur Livreur VL', entreprise:'DPD France', lieu:'Cergy (95)', type:'CDD 6 mois', detail:'Permis B 2 ans min. Livraison colis en zone Val d\'Oise. Salaire : 1 900€/mois.', date:'25/05/2025' },
-  { poste:'Assistant administratif', entreprise:'Mairie d\'Osny', lieu:'Osny (95520)', type:'Contractuel', detail:'Bac+2 min. Maîtrise outils bureautiques. Accueil du public. 35h/semaine.', date:'20/05/2025' },
-];
 
-const RANKINGS_POINTS = [
-  { name:'Ahmed Benali', sub:'24 parties', pts:847, games:'18V / 6D' },
-  { name:'Pierre Durand', sub:'22 parties', pts:791, games:'16V / 6D' },
-  { name:'Carlos Mendes', sub:'20 parties', pts:734, games:'14V / 6D' },
-  { name:'Sophie Martin', sub:'18 parties', pts:698, games:'13V / 5D' },
-  { name:'Jean-Marc Faure', sub:'21 parties', pts:654, games:'12V / 9D' },
-  { name:'Fatima Oujda', sub:'16 parties', pts:612, games:'11V / 5D' },
-];
 
 /* ===================== ÉTAT ===================== */
 let currentUser = null;
 let currentPage = 'login';
-let rankMode = 'points';
 let agendaMode = 'club';
 
 const BUREAU_FONCTIONS = ['Président','Vice-Président','Secrétaire','Trésorier','Capitaine'];
 
 const getUsers       = () => { try { return JSON.parse(localStorage.getItem('pvk_users')||'[]'); } catch { return []; } };
 const saveUsers      = u  => localStorage.setItem('pvk_users', JSON.stringify(u));
-const getMessages    = () => { try { return JSON.parse(localStorage.getItem('pvk_chat')||'[]'); } catch { return []; } };
-const saveMessages   = m  => localStorage.setItem('pvk_chat', JSON.stringify(m));
-const getFilms       = () => { try { return JSON.parse(localStorage.getItem('pvk_films')||'[]'); } catch { return []; } };
-const saveFilms      = f  => localStorage.setItem('pvk_films', JSON.stringify(f));
 const getCurrentUser = () => { try { return JSON.parse(localStorage.getItem('pvk_current')||'null'); } catch { return null; } };
 const saveCurrentUser= u  => localStorage.setItem('pvk_current', JSON.stringify(u));
 
@@ -330,14 +303,14 @@ function saisonProgress(user) {
 }
 function generateId() { return 'U' + String(getUsers().length + 1).padStart(6, '0'); }
 function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 /* ===== CONTRÔLE D'ACCÈS ===== */
 // Pages libres à tous les membres connectés (payants ou non)
-const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement'];
+const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil'];
 // Pages réservées aux adhérents actifs
-const MEMBER_PAGES = ['contacts','cinema','emplois','carte','membres','classement','chat'];
+const MEMBER_PAGES = ['contacts','carte','membres'];
 // Page admin uniquement
 const ADMIN_PAGES = ['admin'];
 
@@ -369,13 +342,31 @@ function switchTab(tab) {
   document.getElementById('formRegister').classList.toggle('hidden', tab!=='register');
 }
 
+/* Identifiant de connexion : le numéro de portable.
+   Firebase exige un email : on fabrique une adresse technique à partir du numéro
+   (ex. 0612345678@tel.pvk-petanque.firebaseapp.com). Elle ne reçoit jamais de courrier. */
+const DOMAINE_TEL = 'tel.pvk-petanque.firebaseapp.com';
+function normaliserPortable(tel) {
+  var d = (tel || '').replace(/\D/g, '');
+  if (d.indexOf('0033') === 0) d = d.slice(4);
+  if (d.indexOf('33') === 0 && d.length === 11) d = d.slice(2);
+  if (d.length === 9) d = '0' + d;
+  return d;
+}
+function identifiantVersEmailAuth(saisie) {
+  saisie = (saisie || '').trim().toLowerCase();
+  if (saisie.indexOf('@') >= 0) return saisie;          // compte créé avec un email (ex. admin)
+  return normaliserPortable(saisie) + '@' + DOMAINE_TEL;
+}
+function estEmailTechnique(email) { return !!email && email.slice(-DOMAINE_TEL.length) === DOMAINE_TEL; }
+
 function messageErreurAuth(err) {
   var c = (err && err.code) || '';
-  if (c === 'auth/email-already-in-use') return 'Cet email est déjà utilisé.';
-  if (c === 'auth/invalid-email') return 'Adresse email invalide.';
+  if (c === 'auth/email-already-in-use') return 'Ce numéro de portable est déjà inscrit. Utilisez « Connexion ».';
+  if (c === 'auth/invalid-email') return 'Numéro de portable ou email invalide.';
   if (c === 'auth/weak-password') return 'Mot de passe trop court (6 caractères minimum).';
   if (c === 'auth/user-not-found' || c === 'auth/wrong-password' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials')
-    return 'Email ou mot de passe incorrect.';
+    return 'Portable ou mot de passe incorrect.';
   if (c === 'auth/too-many-requests') return 'Trop de tentatives. Réessayez dans quelques minutes.';
   if (c === 'auth/network-request-failed') return 'Pas de connexion internet.';
   return 'Erreur : ' + ((err && err.message) || 'inconnue');
@@ -394,7 +385,7 @@ function ouvrirSession(authUser) {
 function doLogin(e) {
   e.preventDefault();
   if (!fbAuth) { showError('loginError', 'Service indisponible. Vérifiez votre connexion.'); return; }
-  var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  var email = identifiantVersEmailAuth(document.getElementById('loginEmail').value);
   var pass  = document.getElementById('loginPassword').value;
   showError('loginError', '⏳ Connexion en cours…');
   authEnCours = true;
@@ -405,8 +396,13 @@ function doLogin(e) {
 }
 
 function motDePasseOublie() {
-  var email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  if (!email) { showError('loginError', 'Saisissez d\'abord votre email ci-dessus.'); return; }
+  var saisie = document.getElementById('loginEmail').value.trim().toLowerCase();
+  if (!saisie) { showError('loginError', 'Saisissez d\'abord votre portable ou email ci-dessus.'); return; }
+  if (saisie.indexOf('@') < 0) {
+    openModal('Mot de passe oublié', '<p>Pour un compte créé avec le numéro de portable, contactez l\'administrateur du club : il supprimera votre compte et vous pourrez vous réinscrire avec le même numéro.</p>');
+    return;
+  }
+  var email = saisie;
   if (!fbAuth) { showError('loginError', 'Service indisponible.'); return; }
   fbAuth.sendPasswordResetEmail(email)
     .then(function() { showToast('📧 Email de réinitialisation envoyé à ' + email); })
@@ -415,7 +411,7 @@ function motDePasseOublie() {
 
 function doRegister(e) {
   e.preventDefault();
-  const email   = document.getElementById('regEmail').value.trim().toLowerCase();
+  const email   = document.getElementById('regEmail').value.trim().toLowerCase(); // facultatif, pour le contact
   const pass    = document.getElementById('regPassword').value;
   const prenom  = document.getElementById('regPrenom').value.trim();
   const nom     = document.getElementById('regNom').value.trim();
@@ -437,9 +433,9 @@ function doRegister(e) {
   if (!fbAuth) { showError('regError', 'Service indisponible. Vérifiez votre connexion.'); return; }
   showError('regError', '⏳ Création du compte…');
   authEnCours = true;
-  fbAuth.createUserWithEmailAndPassword(email, pass)
+  fbAuth.createUserWithEmailAndPassword(identifiantVersEmailAuth(tel), pass)
     .then(function(cred) {
-      var profil = { id: cred.user.uid, email: email, prenom: prenom, nom: nom, tel: tel, naissance: naissance,
+      var profil = { id: cred.user.uid, email: email || '', prenom: prenom, nom: nom, tel: tel, naissance: naissance,
                      fonction: fonction || 'Membre', adresse: adresse, inscritLe: getPaiementDate() };
       return fbSaveProfil(profil).then(function() { return ouvrirSession(cred.user); });
     })
@@ -484,12 +480,11 @@ function updateSidebar() {
 function nav(page) { showPage(page); closeSidebar(); }
 
 function showPage(page) {
-  if (page !== 'chat' && chatTimer) { clearInterval(chatTimer); chatTimer = null; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(`page-${page}`);
   if (el) el.classList.add('active');
-  const navMap = { accueil:'navAccueil', agenda:'navAgenda', cinema:'navCinema', membres:'navMembres', chat:'navChat' };
+  const navMap = { accueil:'navAccueil', agenda:'navAgenda', actualites:'navActus', membres:'navMembres', profil:'navProfil' };
   if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
   currentPage = page;
   if (page !== 'login') renderPage(page);
@@ -502,15 +497,12 @@ function renderPage(page) {
     case 'club':       renderClub(); break;
     case 'actualites': renderActualites(); break;
     case 'agenda':     renderAgenda(); break;
-    case 'cinema':     renderCinema(); break;
-    case 'emplois':    renderEmplois(); break;
     case 'contacts':   break;
     case 'adhesion':   break;
     case 'carte':      renderCarte(); break;
     case 'abonnement': renderAbonnement(); break;
     case 'membres':    renderMembres(); break;
-    case 'classement': renderClassement(); break;
-    case 'chat':       renderChat(); break;
+    case 'profil':     renderProfil(); break;
     case 'admin':      renderAdmin(); break;
   }
 }
@@ -519,21 +511,25 @@ function renderPage(page) {
 function renderAccueil() {
   if (!currentUser) return;
   document.getElementById('welcomeName').textContent = `Bonjour, ${currentUser.prenom} !`;
-  // Compteur
-  const users  = getUsers();
-  const actifs = users.filter(u => isAbonnementActif(u));
   const isAdmin = currentUser.role === 'admin';
   document.getElementById('counterSimple').classList.toggle('hidden', isAdmin);
   document.getElementById('counterAdmin').classList.toggle('hidden', !isAdmin);
-  document.getElementById('cntTotal').textContent   = users.length;
   if (isAdmin) {
+    const users  = getUsers();
+    const actifs = users.filter(u => isAbonnementActif(u));
     document.getElementById('cntTotalA').textContent  = users.length;
     document.getElementById('cntActifs').textContent  = actifs.length;
     document.getElementById('cntExpires').textContent = users.length - actifs.length;
+  } else {
+    document.getElementById('cntTotal').textContent = '—';
+    if (isAbonnementActif(currentUser)) {
+      fbList('annuaire', function(l) {
+        if (l) document.getElementById('cntTotal').textContent = l.filter(m => m.actif).length;
+      });
+    }
   }
   // Statut perso
   const actif = isAbonnementActif(currentUser);
-  const days  = daysUntilExpiry(currentUser);
   const sc = document.getElementById('statusCard');
   sc.className = `status-card${actif?'':' expired'}`;
   document.getElementById('statusIcon').textContent = actif ? '✅' : '❌';
@@ -541,56 +537,97 @@ function renderAccueil() {
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
   // Aperçu actualités
   const preview = document.getElementById('newsPreview');
-  {
-    preview.innerHTML = NEWS.slice(0,2).map(n => `
-      <div class="news-card" style="margin-bottom:10px">
-        <div class="news-accent ${n.accent}"></div>
-        <span class="news-badge ${n.type}">${n.type.charAt(0).toUpperCase()+n.type.slice(1)}</span>
-        <div class="news-title">${n.title}</div>
-        <div class="news-body">${n.body.substring(0,100)}…</div>
-        <div class="news-date">📅 ${n.date}</div>
-      </div>`).join('');
-  }
-
+  preview.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  chargerNews(function(list) {
+    preview.innerHTML = list === null ? '<p class="vide">Actualités indisponibles.</p>'
+      : list.length ? list.slice(0,2).map(n => buildNewsCard(n, true)).join('')
+      : '<p class="vide">Aucune actualité pour le moment.</p>';
+  });
 }
 
 /* ===================== CLUB ===================== */
 function renderClub() {
-  const users = getUsers();
-  const bureau = users.filter(u => BUREAU_FONCTIONS.includes(u.fonction||''));
-  document.getElementById('bureauList').innerHTML = bureau.map(u => `
-    <div class="membre-card" style="cursor:default">
-      <div class="membre-avatar gold">${initials(u.prenom,u.nom)}</div>
-      <div class="membre-info">
-        <div class="membre-name">${u.prenom} ${u.nom}</div>
-        <span class="membre-fonction bureau">${u.fonction}</span>
-        ${u.tel?`<div class="membre-row"><span>📞</span><a href="tel:${u.tel}" class="link-red">${u.tel}</a></div>`:''}
-        ${u.email?`<div class="membre-row"><span>✉️</span><a href="mailto:${u.email}" class="link-red">${u.email}</a></div>`:''}
-      </div>
-    </div>`).join('') || '<p style="color:var(--text-muted);font-size:.88rem">Aucun membre du bureau enregistré.</p>';
+  const c = document.getElementById('bureauList');
+  if (!canAccess('membres')) { c.innerHTML = '<p class="vide">Le bureau est visible par les adhérents.</p>'; return; }
+  c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  fbList('annuaire', function(list) {
+    if (list === null) { c.innerHTML = '<p class="vide">Bureau indisponible.</p>'; return; }
+    const bureau = list.filter(u => u.actif && BUREAU_FONCTIONS.includes(u.fonction||''))
+      .sort((a,b) => BUREAU_FONCTIONS.indexOf(a.fonction) - BUREAU_FONCTIONS.indexOf(b.fonction));
+    c.innerHTML = bureau.map(u => `
+      <div class="membre-card" style="cursor:default">
+        <div class="membre-avatar gold">${initials(u.prenom,u.nom)}</div>
+        <div class="membre-info">
+          <div class="membre-name">${escapeHtml(u.prenom)} ${escapeHtml(u.nom)}</div>
+          <span class="membre-fonction bureau">${escapeHtml(u.fonction)}</span>
+          ${u.tel?`<div class="membre-row"><span>📞</span><a href="tel:${escapeHtml(u.tel)}" class="link-red">${escapeHtml(u.tel)}</a></div>`:''}
+        </div>
+      </div>`).join('') || '<p class="vide">Aucun membre du bureau enregistré.</p>';
+  });
 }
 
-/* ===================== ACTUALITÉS ===================== */
+/* ===================== ACTUALITÉS (Firebase, gérées par l'admin) ===================== */
+const NEWS_TYPES = { info:'Info', annonce:'Annonce', tournoi:'Tournoi', urgent:'Urgent' };
+
+function chargerNews(callback) {
+  fbList('news', function(list) {
+    if (list) list.sort((a,b) => (b.ts||0) - (a.ts||0));
+    callback(list);
+  });
+}
+function buildNewsCard(n, apercu) {
+  const type = NEWS_TYPES[n.type] ? n.type : 'info';
+  const body = escapeHtml(n.body || '');
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  return `<div class="news-card"${apercu?' style="margin-bottom:10px"':''}>
+    <div class="news-accent"></div>
+    <span class="news-badge ${type}">${NEWS_TYPES[type]}</span>
+    <div class="news-title">${escapeHtml(n.title || '')}</div>
+    <div class="news-body">${apercu && body.length > 110 ? body.substring(0,110) + '…' : body.replace(/\n/g,'<br/>')}</div>
+    <div class="news-date">📅 ${escapeHtml(n.date || '')}</div>
+    ${!apercu && isAdmin ? `<button class="admin-btn del mt-8" onclick="adminSupprimerNews('${n.id}')">🗑️ Supprimer</button>` : ''}
+  </div>`;
+}
 function renderActualites() {
-  const actif = true; // accessible à tous les membres connectés
-  document.getElementById('newsAccessMsg').classList.toggle('hidden', actif);
-  document.getElementById('newsContainer').innerHTML = actif ? NEWS.map(n => `
-    <div class="news-card">
-      <div class="news-accent ${n.accent}"></div>
-      <span class="news-badge ${n.type}">${n.type.charAt(0).toUpperCase()+n.type.slice(1)}</span>
-      <div class="news-title">${n.title}</div>
-      <div class="news-body">${n.body}</div>
-      <div class="news-date">📅 ${n.date}</div>
-    </div>`).join('') : '';
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  document.getElementById('newsAdminForm').classList.toggle('hidden', !isAdmin);
+  const c = document.getElementById('newsContainer');
+  c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  chargerNews(function(list) {
+    c.innerHTML = list === null ? '<p class="vide">Actualités indisponibles (connexion ?).</p>'
+      : list.length ? list.map(n => buildNewsCard(n, false)).join('')
+      : '<p class="vide">Aucune actualité pour le moment.</p>';
+  });
+}
+function adminPublierNews() {
+  if (!currentUser || currentUser.role !== 'admin' || !db) return;
+  const title = document.getElementById('newsTitre').value.trim();
+  const body  = document.getElementById('newsTexte').value.trim();
+  const type  = document.getElementById('newsType').value;
+  if (!title || !body) { showToast('⚠️ Titre et texte obligatoires'); return; }
+  const now = new Date();
+  db.ref('news').push({ title: title.slice(0,150), body: body.slice(0,2000), type: type, ts: now.getTime(),
+                        date: now.toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) })
+    .then(function() {
+      document.getElementById('newsTitre').value = ''; document.getElementById('newsTexte').value = '';
+      showToast('✅ Actualité publiée'); renderActualites();
+    })
+    .catch(function() { showToast('⚠️ Publication impossible'); });
+}
+function adminSupprimerNews(id) {
+  if (!confirm('Supprimer cette actualité ?')) return;
+  db.ref('news/' + id).remove().then(function(){ showToast('🗑️ Actualité supprimée'); renderActualites(); })
+    .catch(function(){ showToast('⚠️ Suppression impossible'); });
 }
 
 /* ===================== AGENDA ===================== */
-const AGENDA_FRANCE_COMPLET = [...AGENDA_FRANCE, ...AGENDA_CIVIL].sort((a,b) => {
-  const mois = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-  if (a.year !== b.year) return a.year - b.year;
-  if (a.month !== b.month) return mois.indexOf(a.month) - mois.indexOf(b.month);
-  return a.day - b.day;
-});
+const MOIS_LONGS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const AGENDA_FRANCE_COMPLET = [...AGENDA_FRANCE, ...AGENDA_CIVIL];
+function dateEvenement(ev) { return new Date(ev.year, MOIS_LONGS.indexOf(ev.month), ev.day); }
+function aVenir(list) {
+  const auj = new Date(); auj.setHours(0,0,0,0);
+  return list.filter(ev => dateEvenement(ev) >= auj).sort((a,b) => dateEvenement(a) - dateEvenement(b));
+}
 
 function switchAgenda(mode) {
   agendaMode = mode;
@@ -602,190 +639,92 @@ function switchAgenda(mode) {
 }
 
 function renderAgenda() {
-  const data = { club:AGENDA_CLUB, france:AGENDA_FRANCE_COMPLET, inde:AGENDA_INDE }[agendaMode] || [];
-  const typeLabel = { tournoi:'Tournoi', special:'Spécial', ferie:'Jour Férié', vacances:'Vacances 🏫', admin:'Démarche', impot:'Fiscal', election:'Élection', entrainement:'Entraînement' };
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  document.getElementById('agendaAdminForm').classList.toggle('hidden', !(isAdmin && agendaMode === 'club'));
+  const c = document.getElementById('agendaContainer');
+  if (agendaMode !== 'club') {
+    afficherAgenda(aVenir(agendaMode === 'inde' ? AGENDA_INDE : AGENDA_FRANCE_COMPLET), false);
+    return;
+  }
+  c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  fbList('agenda', function(list) {
+    if (list === null) { c.innerHTML = '<p class="vide">Agenda indisponible (connexion ?).</p>'; return; }
+    const evs = list.map(e => {
+      const p = (e.date || '').split('-');
+      return { id: e.id, day: +p[2], month: MOIS_LONGS[+p[1]-1], year: +p[0],
+               name: e.name || '', detail: e.detail || '', type: e.type || 'special' };
+    }).filter(e => e.month);
+    afficherAgenda(aVenir(evs), isAdmin);
+  });
+}
+
+function afficherAgenda(data, avecSuppression) {
+  const typeLabel = { tournoi:'Tournoi', special:'Événement', ferie:'Jour Férié', vacances:'Vacances 🏫', admin:'Démarche', impot:'Fiscal', election:'Élection', entrainement:'Entraînement', reunion:'Réunion' };
   let lastMonth = '';
-  document.getElementById('agendaContainer').innerHTML = data.map(ev => {
+  document.getElementById('agendaContainer').innerHTML = data.length ? data.map(ev => {
     let h = '';
-    if (ev.month !== lastMonth) { lastMonth = ev.month; h = `<div class="cal-month">${ev.month} ${ev.year}</div>`; }
+    const m = ev.month + ev.year;
+    if (m !== lastMonth) { lastMonth = m; h = `<div class="cal-month">${ev.month} ${ev.year}</div>`; }
     return `${h}<div class="cal-event">
       <div class="cal-date"><div class="cal-day">${ev.day}</div><div class="cal-mo">${ev.month.substring(0,3)}</div></div>
-      <div class="cal-info"><div class="cal-name">${ev.name}</div><div class="cal-detail">${ev.detail}</div></div>
+      <div class="cal-info"><div class="cal-name">${escapeHtml(ev.name)}</div><div class="cal-detail">${escapeHtml(ev.detail)}</div>
+        ${avecSuppression ? `<button class="admin-btn del mt-8" onclick="adminSupprimerEvenement('${ev.id}')">🗑️ Supprimer</button>` : ''}</div>
       <span class="cal-type ${ev.type}">${typeLabel[ev.type]||ev.type}</span>
     </div>`;
-  }).join('');
+  }).join('') : '<p class="vide">Aucun événement à venir.</p>';
 }
 
-/* ===================== CINÉMA ===================== */
-async function renderCinema() {
-  // Si des films ont été ajoutés par l'admin → on les affiche en priorité
-  const filmsAdmin = getFilms();
-  if (filmsAdmin.length > 0) { renderCinemaAdmin(); return; }
-  const actif = canAccess('cinema');
-  document.getElementById('cinemaAccessMsg').classList.toggle('hidden', actif);
-  const c = document.getElementById('cinemaContainer');
-  if (!actif) { c.innerHTML = ''; return; }
-
-  // Si pas de clé TMDB → films statiques de démonstration
-  if (!TMDB_KEY) {
-    c.innerHTML = FILMS.map(f => `
-      <div class="film-card">
-        <div class="film-poster" style="background:linear-gradient(135deg,${f.couleur},${f.couleur2})">
-          <span class="film-emoji">${f.emoji}</span>
-        </div>
-        <div class="film-info">
-          <div class="film-titre">${f.titre}</div>
-          <div class="film-meta"><span class="film-genre">${f.genre}</span> · ${f.duree}</div>
-          <div class="film-synopsis">${f.synopsis}</div>
-          <div class="film-note">${f.note}</div>
-        </div>
-      </div>`).join('');
-    return;
-  }
-
-  // Avec clé TMDB → films indiens réels (tamoul + hindi + kannada + telugu)
-  c.innerHTML = `<div class="cinema-loading">🎬 Chargement des films en cours…</div>`;
-  try {
-    const langues = ['ta','hi','te','kn']; // tamoul, hindi, télougou, kannada
-    const fetches = langues.map(lang =>
-      fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_KEY}&with_original_language=${lang}&sort_by=popularity.desc&page=1`)
-        .then(r => r.json())
-    );
-    const results = await Promise.all(fetches);
-    // Fusionner + dédupliquer + trier par popularité
-    const seen = new Set();
-    const films = results.flatMap(r => r.results || [])
-      .filter(f => { if (seen.has(f.id)) return false; seen.add(f.id); return f.poster_path; })
-      .sort((a,b) => b.popularity - a.popularity)
-      .slice(0, 20);
-
-    if (!films.length) { c.innerHTML = '<div class="membres-empty">Aucun film trouvé.</div>'; return; }
-
-    const langLabel = { ta:'Tamil', hi:'Hindi', te:'Telugu', kn:'Kannada', ml:'Malayalam' };
-    c.innerHTML = films.map(f => {
-      const note = f.vote_average ? '⭐ ' + f.vote_average.toFixed(1) + '/10' : '';
-      const annee = f.release_date ? f.release_date.substring(0,4) : '';
-      const lang  = langLabel[f.original_language] || f.original_language?.toUpperCase() || '';
-      const synopsis = f.overview ? f.overview.substring(0,140)+'…' : 'Synopsis non disponible.';
-      return `
-      <div class="film-card">
-        <img class="film-poster-img" src="${TMDB_IMG}${f.poster_path}" alt="${f.title}" loading="lazy"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
-        <div class="film-poster-fallback" style="display:none">🎬</div>
-        <div class="film-info">
-          <div class="film-titre">${f.title}</div>
-          ${f.original_title !== f.title ? `<div class="film-original">${f.original_title}</div>` : ''}
-          <div class="film-meta">
-            <span class="film-genre">${lang}</span>
-            ${annee ? `· ${annee}` : ''}
-          </div>
-          <div class="film-synopsis">${synopsis}</div>
-          ${note ? `<div class="film-note">${note}</div>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    c.innerHTML = `<div class="access-msg">⚠️ Impossible de charger les films. Vérifiez votre clé API TMDB.</div>`;
-    // Fallback sur les films statiques
-    setTimeout(() => renderCinemaStatic(), 300);
-  }
+function adminAjouterEvenement() {
+  if (!currentUser || currentUser.role !== 'admin' || !db) return;
+  const date   = document.getElementById('evDate').value;
+  const name   = document.getElementById('evTitre').value.trim();
+  const detail = document.getElementById('evDetail').value.trim();
+  const type   = document.getElementById('evType').value;
+  if (!date || !name) { showToast('⚠️ Date et titre obligatoires'); return; }
+  db.ref('agenda').push({ date: date, name: name.slice(0,120), detail: detail.slice(0,300), type: type, ts: Date.now() })
+    .then(function() {
+      ['evDate','evTitre','evDetail'].forEach(id => document.getElementById(id).value = '');
+      showToast('✅ Événement ajouté'); renderAgenda();
+    })
+    .catch(function() { showToast('⚠️ Ajout impossible'); });
+}
+function adminSupprimerEvenement(id) {
+  if (!confirm('Supprimer cet événement ?')) return;
+  db.ref('agenda/' + id).remove().then(function(){ showToast('🗑️ Événement supprimé'); renderAgenda(); })
+    .catch(function(){ showToast('⚠️ Suppression impossible'); });
 }
 
-function renderCinemaAdmin() {
-  const actif = canAccess('cinema');
-  const c = document.getElementById('cinemaContainer');
-  if (!actif) return;
-  const films = getFilms();
-  c.innerHTML = `<div class="affiches-grid">${films.map(f => `
-    <div class="affiche-item">
-      <img src="${f.affiche}" loading="lazy" onerror="this.style.display='none'"/>
-    </div>`).join('')}</div>`;
+/* ===================== MON PROFIL ===================== */
+function renderProfil() {
+  if (!currentUser) return;
+  document.getElementById('pfPrenom').value    = currentUser.prenom || '';
+  document.getElementById('pfNom').value       = currentUser.nom || '';
+  document.getElementById('pfTel').value       = currentUser.tel || '';
+  document.getElementById('pfNaissance').value = currentUser.naissance || '';
+  document.getElementById('pfAdresse').value   = currentUser.adresse || '';
+  document.getElementById('pfEmail').value     = currentUser.email || '';
 }
-
-let filmImageBase64 = '';
-
-function previewFilmImage(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  // Vérifier la taille (max 2MB)
-  if (file.size > 2 * 1024 * 1024) {
-    showToast('⚠️ Image trop lourde. Max 2MB. Faites un screenshot plus petit.');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    filmImageBase64 = e.target.result;
-    // Afficher l'aperçu
-    const preview = document.getElementById('filmPreview');
-    const placeholder = document.getElementById('filmUploadPlaceholder');
-    preview.src = filmImageBase64;
-    preview.classList.remove('hidden');
-    placeholder.classList.add('hidden');
-    showToast('✅ Image chargée !');
+function enregistrerProfil(e) {
+  e.preventDefault();
+  if (!currentUser) return;
+  const maj = {
+    prenom:    document.getElementById('pfPrenom').value.trim(),
+    nom:       document.getElementById('pfNom').value.trim(),
+    naissance: document.getElementById('pfNaissance').value,
+    adresse:   document.getElementById('pfAdresse').value.trim(),
+    email:     document.getElementById('pfEmail').value.trim().toLowerCase()
   };
-  reader.readAsDataURL(file);
-}
-
-function adminAjouterFilm() {
-  if (!filmImageBase64) { showToast('⚠️ Choisissez d\'abord une affiche'); return; }
-  var films = getFilms();
-  films.unshift({ id:'f'+Date.now(), affiche:filmImageBase64 });
-  saveFilms(films);
-  document.getElementById('filmImageInput').value = '';
-  document.getElementById('filmPreview').classList.add('hidden');
-  document.getElementById('filmUploadPlaceholder').classList.remove('hidden');
-  filmImageBase64 = '';
-  showToast('✅ Affiche ajoutée !');
-  renderAdminFilms();
-}
-
-function renderAdminFilms() {
-  const films = getFilms();
-  const c = document.getElementById('adminFilmsContainer');
-  if (!c) return;
-  if (!films.length) { c.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:8px">Aucun film ajouté pour l\'instant.</p>'; return; }
-  c.innerHTML = `<div class="affiches-admin-grid">${films.map(f => `
-    <div class="affiche-admin-item">
-      <img src="${f.affiche}" onerror="this.style.display='none'"/>
-      <button class="affiche-del-btn" onclick="supprimerFilm('${f.id}')">✕</button>
-    </div>`).join('')}</div>`;
-}
-
-function supprimerFilm(id) {
-  if (!confirm('Supprimer cette affiche ?')) return;
-  saveFilms(getFilms().filter(function(f){return f.id!==id&&f.fbKey!==id;}));
-  showToast('🗑️ Affiche supprimée'); renderAdminFilms();
-}
-
-function renderCinemaStatic() {
-  const c = document.getElementById('cinemaContainer');
-  c.innerHTML = FILMS.map(f => `
-    <div class="film-card">
-      <div class="film-poster" style="background:linear-gradient(135deg,${f.couleur},${f.couleur2})">
-        <span class="film-emoji">${f.emoji}</span>
-      </div>
-      <div class="film-info">
-        <div class="film-titre">${f.titre}</div>
-        <div class="film-meta"><span class="film-genre">${f.genre}</span> · ${f.duree}</div>
-        <div class="film-synopsis">${f.synopsis}</div>
-        <div class="film-note">${f.note}</div>
-      </div>
-    </div>`).join('');
-}
-
-/* ===================== EMPLOIS ===================== */
-function renderEmplois() {
-  const actif = canAccess('emplois');
-  document.getElementById('emploisAccessMsg').classList.toggle('hidden', actif);
-  document.getElementById('emploisContainer').innerHTML = actif ? EMPLOIS.map(e => `
-    <div class="emploi-card">
-      <div class="emploi-header">
-        <div><div class="emploi-poste">${e.poste}</div><div class="emploi-entreprise">${e.entreprise} · ${e.lieu}</div></div>
-        <span class="emploi-type ${e.type.includes('CDI')?'cdi':e.type.includes('CDD')?'cdd':'autre'}">${e.type}</span>
-      </div>
-      <div class="emploi-detail">${e.detail}</div>
-      <div class="emploi-date">Publié le ${e.date}</div>
-    </div>`).join('') : '';
+  if (!maj.prenom || !maj.nom || !maj.adresse || !maj.naissance) { showToast('⚠️ Nom, prénom, adresse et date de naissance obligatoires'); return; }
+  const dn = new Date(maj.naissance);
+  if (isNaN(dn.getTime()) || dn > new Date() || dn.getFullYear() < 1900) { showToast('⚠️ Date de naissance invalide'); return; }
+  const nouveau = Object.assign({}, currentUser, maj);
+  fbSaveProfil(nouveau).then(function() {
+    currentUser = nouveau; saveCurrentUser(nouveau);
+    const users = getUsers(), i = users.findIndex(u => u.id === nouveau.id);
+    if (i >= 0) { users[i] = Object.assign(users[i], maj); saveUsers(users); }
+    updateSidebar();
+    showToast('✅ Profil enregistré');
+  }).catch(function() { showToast('⚠️ Enregistrement impossible (connexion ?)'); });
 }
 
 /* ===================== CARTE MEMBRE ===================== */
@@ -864,33 +803,35 @@ function renewSubscription() {
   showToast('✅ Abonnement renouvelé !'); renderAbonnement();
 }
 
-/* ===================== MEMBRES ===================== */
+/* ===================== MEMBRES (annuaire Firebase) ===================== */
 let membreFilter = 'tous';
+let annuaireCache = [];
 
 function renderMembres() {
   const actif = canAccess('membres');
   document.getElementById('membresAccessMsg').classList.toggle('hidden', actif);
   document.getElementById('membresContent').classList.toggle('hidden', !actif);
   if (!actif) return;
-  renderMembreStats();
-  filterMembres();
+  document.getElementById('membresContainer').innerHTML = '<div class="membres-empty">⏳ Chargement…</div>';
+  fbList('annuaire', function(list) {
+    if (list === null) { document.getElementById('membresContainer').innerHTML = '<div class="membres-empty">Annuaire indisponible (connexion ?).</div>'; return; }
+    annuaireCache = list.filter(u => u.actif);
+    renderMembreStats();
+    filterMembres();
+  });
 }
 
 function renderMembreStats() {
-  const users  = getUsers();
-  const actifs = users.filter(u => isAbonnementActif(u)).length;
-  const bureau = users.filter(u => BUREAU_FONCTIONS.includes(u.fonction||'')).length;
+  const bureau = annuaireCache.filter(u => BUREAU_FONCTIONS.includes(u.fonction||'')).length;
   document.getElementById('membreStats').innerHTML = `
-    <div class="mstat"><span class="mstat-val">${users.length}</span><span class="mstat-lbl">Total</span></div>
-    <div class="mstat actif"><span class="mstat-val">${actifs}</span><span class="mstat-lbl">Adhérents</span></div>
-    <div class="mstat expire"><span class="mstat-val">${users.length - actifs}</span><span class="mstat-lbl">Non-payants</span></div>
+    <div class="mstat actif"><span class="mstat-val">${annuaireCache.length}</span><span class="mstat-lbl">Adhérents</span></div>
     <div class="mstat bureau"><span class="mstat-val">${bureau}</span><span class="mstat-lbl">Bureau</span></div>
   `;
 }
 
 function setMembreFilter(f) {
   membreFilter = f;
-  ['tous','actifs','expires','bureau'].forEach(x => {
+  ['tous','bureau'].forEach(x => {
     document.getElementById('filter'+x.charAt(0).toUpperCase()+x.slice(1))?.classList.toggle('active', x===f);
   });
   filterMembres();
@@ -898,160 +839,44 @@ function setMembreFilter(f) {
 
 function filterMembres() {
   const q = (document.getElementById('membreSearch')?.value||'').toLowerCase();
-  let users = getUsers();
-
-  // Filtre statut
-  if (membreFilter === 'actifs')  users = users.filter(u => isAbonnementActif(u));
-  if (membreFilter === 'expires') users = users.filter(u => !isAbonnementActif(u));
-  if (membreFilter === 'bureau')  users = users.filter(u => BUREAU_FONCTIONS.includes(u.fonction||''));
-
-  // Filtre recherche
-  if (q) users = users.filter(u =>
-    `${u.prenom} ${u.nom} ${u.email||''} ${u.fonction||''} ${u.adresse||''} ${u.tel||''}`.toLowerCase().includes(q)
-  );
-
-  // Tri : bureau en premier, puis alphabétique
+  let users = annuaireCache.slice();
+  if (membreFilter === 'bureau') users = users.filter(u => BUREAU_FONCTIONS.includes(u.fonction||''));
+  if (q) users = users.filter(u => `${u.prenom} ${u.nom} ${u.fonction||''} ${u.tel||''}`.toLowerCase().includes(q));
   users.sort((a,b) => {
-    const ai = BUREAU_FONCTIONS.indexOf(a.fonction||'');
-    const bi = BUREAU_FONCTIONS.indexOf(b.fonction||'');
+    const ai = BUREAU_FONCTIONS.indexOf(a.fonction||''), bi = BUREAU_FONCTIONS.indexOf(b.fonction||'');
     if (ai !== -1 && bi === -1) return -1;
     if (ai === -1 && bi !== -1) return 1;
     if (ai !== -1 && bi !== -1) return ai - bi;
     return `${a.nom}${a.prenom}`.localeCompare(`${b.nom}${b.prenom}`);
   });
-
   const c = document.getElementById('membresContainer');
-  if (!users.length) {
-    c.innerHTML = '<div class="membres-empty">Aucun membre trouvé.</div>';
-    return;
-  }
-  c.innerHTML = users.map(u => buildMembreCard(u)).join('');
+  c.innerHTML = users.length ? users.map(buildMembreCard).join('') : '<div class="membres-empty">Aucun membre trouvé.</div>';
 }
 
 function buildMembreCard(u) {
-  const ini      = initials(u.prenom, u.nom);
   const isBureau = BUREAU_FONCTIONS.includes(u.fonction||'');
-  const ok       = isAbonnementActif(u);
+  const tel = escapeHtml(u.tel || '');
   return `
   <div class="membre-detail-card">
-    <!-- En-tête -->
     <div class="mdc-header">
-      <div class="mdc-avatar ${isBureau?'gold':''}">${ini}</div>
+      <div class="mdc-avatar ${isBureau?'gold':''}">${initials(u.prenom, u.nom)}</div>
       <div class="mdc-identity">
-        <div class="mdc-name">${u.prenom} ${u.nom}</div>
-        <div class="mdc-meta">
-          <span class="membre-fonction ${isBureau?'bureau':''}">${u.fonction||'Membre'}</span>
-          <span class="badge-sm ${ok?'actif':'expire'}">${ok?'Adhérent':'Non-payant'}</span>
-        </div>
+        <div class="mdc-name">${escapeHtml(u.prenom||'')} ${escapeHtml(u.nom||'')}</div>
+        <div class="mdc-meta"><span class="membre-fonction ${isBureau?'bureau':''}">${escapeHtml(u.fonction||'Membre')}</span></div>
       </div>
     </div>
-    <!-- Contacts -->
-    <div class="mdc-contacts">
-      ${u.tel ? `
-      <a href="tel:${u.tel}" class="mdc-contact-row">
+    ${tel ? `<div class="mdc-contacts">
+      <a href="tel:${tel}" class="mdc-contact-row">
         <div class="mdc-contact-icon tel">📞</div>
-        <div class="mdc-contact-info">
-          <div class="mdc-contact-label">Téléphone</div>
-          <div class="mdc-contact-val">${u.tel}</div>
-        </div>
+        <div class="mdc-contact-info"><div class="mdc-contact-label">Portable</div><div class="mdc-contact-val">${tel}</div></div>
         <div class="mdc-contact-action">Appeler</div>
-      </a>` : ''}
-      ${u.email ? `
-      <a href="mailto:${u.email}" class="mdc-contact-row">
-        <div class="mdc-contact-icon mail">✉️</div>
-        <div class="mdc-contact-info">
-          <div class="mdc-contact-label">Email</div>
-          <div class="mdc-contact-val">${u.email}</div>
-        </div>
-        <div class="mdc-contact-action">Écrire</div>
-      </a>` : ''}
-      ${u.adresse ? `
-      <div class="mdc-contact-row">
-        <div class="mdc-contact-icon addr">📍</div>
-        <div class="mdc-contact-info">
-          <div class="mdc-contact-label">Adresse</div>
-          <div class="mdc-contact-val">${u.adresse}</div>
-        </div>
-      </div>` : ''}
-    </div>
-    <!-- Pied -->
-    <div class="mdc-footer">
-      <span>🎫 Membre depuis le ${u.inscritLe||'—'}</span>
-      <span>💳 Saison ${u.abonnement?.saison||'—'}</span>
-    </div>
+      </a></div>` : ''}
   </div>`;
 }
-
-/* ===================== CLASSEMENT ===================== */
-function switchRankTab(mode) {
-  rankMode = mode;
-  document.querySelectorAll('#page-classement .tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&mode==='points')||(i===1&&mode==='victoires')));
-  renderClassement();
-}
-function renderClassement() {
-  const medals=['🥇','🥈','🥉'];
-  const data=[...RANKINGS_POINTS].sort((a,b)=>rankMode==='points'?b.pts-a.pts:parseInt(b.games)-parseInt(a.games));
-  document.getElementById('rankContainer').innerHTML=`<div class="rank-table">
-    <div class="rank-header"><span>#</span><span>Joueur</span><span>${rankMode==='points'?'Pts':'V'}</span><span>Parties</span></div>
-    ${data.map((r,i)=>`<div class="rank-row ${i<3?'top'+(i+1):''}">
-      <div class="rank-pos">${i<3?medals[i]:i+1}</div>
-      <div><div class="rank-name">${r.name}</div><div class="rank-sub">${r.sub}</div></div>
-      <div class="rank-val pts">${rankMode==='points'?r.pts:r.games.split('V')[0].trim()}</div>
-      <div class="rank-games">${r.games.split('/')[1]?.trim()||'—'}</div>
-    </div>`).join('')}
-  </div>`;
-}
-
-/* ===================== CHAT ===================== */
-let chatTimer = null;
-
-function renderChat() {
-  const actif = canAccess('chat');
-  document.getElementById('chatAccessMsg').classList.toggle('hidden', actif);
-  document.getElementById('chatInputBar').classList.toggle('hidden', !actif);
-  updateChatHeader();
-  if (!actif) return;
-  displayMessages();
-  clearInterval(chatTimer);
-  chatTimer = setInterval(displayMessages, 3000);
-  setTimeout(scrollChatBottom, 200);
-}
-function updateChatHeader() {
-  const actifs = getUsers().filter(function(u){ return isAbonnementActif(u); }).length;
-  var el = document.getElementById('chatOnlineCount');
-  if (el) el.textContent = actifs + ' adhérent' + (actifs>1?'s':'') + ' dans le club';
-}
-function displayMessages() {
-  var msgs = getMessages();
-  var c = document.getElementById('chatMessages');
-  if (!c) return;
-  if (!msgs.length) { c.innerHTML = '<div class="chat-empty">Soyez le premier à écrire ! 👋</div>'; return; }
-  var html = '', lastDate = '';
-  msgs.forEach(function(msg) {
-    var d = new Date(msg.ts);
-    var ds = d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'});
-    var ts = d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-    if (ds !== lastDate) { html += '<div class="msg-date-sep">'+ds+'</div>'; lastDate = ds; }
-    var isMe = msg.userId === (currentUser && currentUser.id);
-    html += '<div class="msg-wrap '+(isMe?'me':'other')+'">'+(isMe?'':'<div class="msg-author">'+msg.userName+'</div>')+'<div class="msg-bubble">'+escapeHtml(msg.text)+'</div><div class="msg-time">'+ts+'</div></div>';
-  });
-  c.innerHTML = html; scrollChatBottom();
-}
-function scrollChatBottom(){ var c=document.getElementById('chatMessages'); if(c) c.scrollTop=c.scrollHeight; }
-function sendMessage() {
-  var input=document.getElementById('chatInput');
-  var text=input&&input.value.trim();
-  if(!text||!currentUser||!canAccess('chat'))return;
-  var msgs=getMessages();
-  msgs.push({id:'m'+Date.now(),userId:currentUser.id,userName:currentUser.prenom+' '+currentUser.nom,text:text,ts:Date.now()});
-  saveMessages(msgs); input.value=''; displayMessages();
-}
-function chatKeyDown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
 
 /* ===================== ADMIN ===================== */
 function renderAdmin() {
   if (!currentUser || currentUser.role !== 'admin') return;
-  renderAdminFilms();
   // Charger depuis Firebase pour voir TOUS les membres
   document.getElementById('adminMembersContainer').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:16px">⏳ Chargement des membres…</p>';
   fbLoadAllUsers(function(fbUsers) {
@@ -1062,8 +887,23 @@ function renderAdmin() {
     }
     saveUsers(fbUsers);
     renderAdminWithUsers(fbUsers);
+    synchroniserAnnuaire(fbUsers);
   });
 }
+
+// Garder l'annuaire aligné sur les profils et les statuts (écriture admin)
+function synchroniserAnnuaire(users) {
+  if (!db) return;
+  var maj = {};
+  users.forEach(function(u) {
+    if (!u.prenom && !u.nom) return;
+    var f = ficheAnnuaire(u);
+    Object.keys(f).forEach(function(k){ maj['annuaire/' + u.id + '/' + k] = f[k]; });
+    maj['annuaire/' + u.id + '/actif'] = isAbonnementActif(u);
+  });
+  if (Object.keys(maj).length) db.ref().update(maj).catch(function(e){ console.warn('annuaire:', e.message); });
+}
+
 
 function renderAdminWithUsers(users) {
   var actifs  = users.filter(function(u){ return isAbonnementActif(u); });
@@ -1080,11 +920,12 @@ function renderAdminWithUsers(users) {
       '<div class="admin-avatar">' + initials(u.prenom, u.nom) + '</div>' +
       '<div class="admin-member-info">' +
         '<div class="admin-member-name">' + u.prenom + ' ' + u.nom + '</div>' +
-        '<div class="admin-member-email">' + u.email + '</div>' +
+        '<div class="admin-member-email">' + (u.tel ? '📞 ' + u.tel : '') + (u.email ? (u.tel ? ' · ' : '') + u.email : '') + '</div>' +
       '</div>' +
       '<span class="admin-badge ' + (ok?'actif':'expire') + '">' + (ok?'Actif':'Inactif') + '</span>' +
       '<div class="admin-actions">' +
-        (!ok ? '<button class="admin-btn valid" onclick="adminValidate(\'' + u.id + '\')">✓</button>' : '') +
+        (!ok ? '<button class="admin-btn valid" title="Valider" onclick="adminValidate(\'' + u.id + '\')">✓</button>'
+             : (u.role !== 'admin' ? '<button class="admin-btn pause" title="Désactiver" onclick="adminDesactiver(\'' + u.id + '\')">⏸</button>' : '')) +
         (u.role !== 'admin' ? '<button class="admin-btn del" onclick="adminDelete(\'' + u.id + '\')">✕</button>' : '') +
       '</div></div>';
   }).join('');
@@ -1134,12 +975,23 @@ function adminValidate(id){
   users[idx].abonnement={saison:saison,paiement:getPaiementDate(),expire:getExpiry(saison),statut:'actif'};
   saveUsers(users);
   fbSyncUser(users[idx]); // Sync Firebase
-  showToast('✅ Abonnement validé'); renderAdmin();
+  if (db) db.ref('annuaire/' + id).update(Object.assign(ficheAnnuaire(users[idx]), { actif: true })).catch(function(){});
+  showToast('✅ Adhésion validée'); renderAdmin();
 }
+function adminDesactiver(id){
+  var users=getUsers(), idx=users.findIndex(function(u){return u.id===id;}); if(idx<0)return;
+  if(!confirm('Désactiver ' + users[idx].prenom + ' ' + users[idx].nom + ' ? Il garde son compte et ses paiements, mais n\'a plus accès aux rubriques adhérents.'))return;
+  users[idx].abonnement = Object.assign({}, users[idx].abonnement || {}, { statut:'inactif' });
+  saveUsers(users);
+  fbSyncUser(users[idx]);
+  if (db) db.ref('annuaire/' + id + '/actif').set(false).catch(function(){});
+  showToast('⏸ Adhérent désactivé'); renderAdmin();
+}
+
 function adminDelete(id){
   if(!confirm('Supprimer ce membre ? (son profil et ses paiements seront effacés)'))return;
   saveUsers(getUsers().filter(function(u){return u.id!==id;}));
-  if(db) try { db.ref('users/'+id).remove(); } catch(e) {} // Supprimer Firebase
+  if(db) try { db.ref('users/'+id).remove(); db.ref('annuaire/'+id).remove(); } catch(e) {} // Supprimer Firebase
   showToast('🗑️ Membre supprimé'); renderAdmin();
 }
 

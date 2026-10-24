@@ -777,3 +777,11 @@ label.fin-mois { cursor: pointer; }
 .fin-check { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--border); color: var(--text-muted); font-size: .75rem; flex-shrink: 0; }
 .fin-mois.paye .fin-check { background: #16A34A; color: #fff; }
 .fin-vide { text-align: center; color: var(--text-muted); padding: 16px; }
+
+/* ===== ADMIN : désactiver, formulaires, profil ===== */
+.admin-btn.pause { background: #F59E0B; color: white; }
+textarea.fin-search, select.fin-search { font-family: inherit; display: block; }
+textarea.fin-search { resize: vertical; }
+.vide { color: var(--text-muted); font-size: .88rem; text-align: center; padding: 12px; }
+.pf-note { font-size: .75rem; color: var(--text-muted); margin-top: 4px; }
+input:disabled { background: var(--bg); color: var(--text-muted); }
