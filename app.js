@@ -605,21 +605,91 @@ const NEWS_TYPES = { info:'Info', annonce:'Annonce', tournoi:'Tournoi', urgent:'
 
 function chargerNews(callback) {
   fbList('news', function(list) {
-    if (list) list.sort((a,b) => (b.ts||0) - (a.ts||0));
-    callback(list);
+    genererActusAuto(function(auto) {
+      if (list === null && !auto.length) { callback(null); return; }
+      callback((list || []).concat(auto).sort((a,b) => (b.ts||0) - (a.ts||0)));
+    });
   });
+}
+
+/* ----- Actualités générées automatiquement à partir des données de l'appli ----- */
+function fbListP(path) { return new Promise(function(res) { fbList(path, res); }); }
+function quandFr(dt) {
+  const auj = new Date(); auj.setHours(0,0,0,0);
+  const j = Math.round((new Date(dt).setHours(0,0,0,0) - auj) / 864e5);
+  const txt = dt.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  return j === 0 ? 'Aujourd\'hui (' + txt + ')' : j === 1 ? 'Demain (' + txt + ')' : txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+function dateCourteFr(ts) { return new Date(ts).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }); }
+
+function genererActusAuto(callback) {
+  try {
+    const now = Date.now();
+    const auj = new Date(); auj.setHours(0,0,0,0);
+    const dans7 = new Date(auj); dans7.setDate(dans7.getDate() + 7);
+    const adherent = currentUser && (currentUser.role === 'admin' || isAbonnementActif(currentUser));
+    Promise.all([fbListP('films'), fbListP('agenda'), adherent ? fbListP('annuaire') : Promise.resolve(null)])
+      .then(function(r) {
+        const films = r[0] || [], agenda = r[1] || [], annuaire = r[2];
+        const out = [];
+        // 🎬 Films publiés ces 14 derniers jours (et toujours à l'affiche)
+        films.forEach(function(f) {
+          if (!f.ts || now - f.ts > 14 * 864e5 || (f.jusquau && f.jusquau < dateISO(auj))) return;
+          const cines = Array.isArray(f.cinemas) ? f.cinemas : [];
+          out.push({ id: 'auto-film-' + f.id, auto: true, type: 'annonce', badge: '🎬 Cinéma', ts: f.ts, date: dateCourteFr(f.ts),
+            title: 'Nouveau film à l\'affiche : ' + (f.titre || ''),
+            body: (LANGUES_FILMS[f.langue] ? 'Film ' + LANGUES_FILMS[f.langue].toLowerCase() + '. ' : '') +
+                  (cines.length ? 'À voir à : ' + cines.join(', ') + '. ' : '') + 'Séances et réservation dans la rubrique Films.' });
+        });
+        // 📅 Événements du club dans les 7 prochains jours
+        agenda.forEach(function(e) {
+          const dt = new Date((e.date || '') + 'T12:00:00');
+          if (isNaN(dt) || dt < auj || dt >= dans7) return;
+          out.push({ id: 'auto-club-' + e.id, auto: true, type: 'tournoi', badge: '📅 Cette semaine au club',
+            ts: now - (dt - auj) / 864e5 * 60000, date: dateCourteFr(now),
+            title: e.name || 'Événement du club', body: quandFr(dt) + (e.detail ? ' — ' + e.detail : '') });
+        });
+        // 🔔 Rappels : jours fériés, changement d'heure, démarches (7 prochains jours)
+        AGENDA_FRANCE_COMPLET.forEach(function(ev) {
+          if (!['ferie','admin','election','impot'].includes(ev.type)) return;
+          const dt = dateEvenement(ev);
+          if (dt < auj || dt >= dans7) return;
+          out.push({ id: 'auto-fr-' + ev.year + ev.month + ev.day + ev.type, auto: true, type: 'info', badge: '🔔 Rappel',
+            ts: now - 1000 - (dt - auj) / 864e5 * 60000, date: dateCourteFr(now),
+            title: ev.name, body: quandFr(dt) + ' — ' + ev.detail });
+        });
+        // 👋 Nouveaux adhérents validés ces 30 derniers jours
+        if (annuaire) {
+          const nouveaux = annuaire.filter(function(u) {
+            if (!u.actif || !u.inscritLe) return false;
+            const p = String(u.inscritLe).split('/');
+            const d = new Date(+p[2], +p[1]-1, +p[0]);
+            return !isNaN(d) && (auj - d) / 864e5 <= 30;
+          });
+          if (nouveaux.length) {
+            const noms = nouveaux.map(u => (u.prenom || '') + ' ' + (u.nom || '')).join(', ');
+            out.push({ id: 'auto-bienvenue', auto: true, type: 'info', badge: '👋 Bienvenue', ts: now - 500, date: dateCourteFr(now),
+              title: nouveaux.length === 1 ? 'Bienvenue à ' + noms + ' !' : 'Bienvenue à nos ' + nouveaux.length + ' nouveaux adhérents !',
+              body: (nouveaux.length === 1 ? 'Un nouveau membre nous a rejoints ce mois-ci.' : 'Ils nous ont rejoints ce mois-ci : ' + noms + '.') + ' Bonne partie à tous !' });
+          }
+        }
+        callback(out);
+      })
+      .catch(function() { callback([]); });
+  } catch (e) { callback([]); }
 }
 function buildNewsCard(n, apercu) {
   const type = NEWS_TYPES[n.type] ? n.type : 'info';
   const body = escapeHtml(n.body || '');
+  const badge = n.auto && n.badge ? escapeHtml(n.badge) : NEWS_TYPES[type];
   const isAdmin = currentUser && currentUser.role === 'admin';
   return `<div class="news-card"${apercu?' style="margin-bottom:10px"':''}>
     <div class="news-accent"></div>
-    <span class="news-badge ${type}">${NEWS_TYPES[type]}</span>
+    <span class="news-badge ${type}">${badge}</span>
     <div class="news-title">${escapeHtml(n.title || '')}</div>
     <div class="news-body">${apercu && body.length > 110 ? body.substring(0,110) + '…' : body.replace(/\n/g,'<br/>')}</div>
     <div class="news-date">📅 ${escapeHtml(n.date || '')}</div>
-    ${!apercu && isAdmin ? `<button class="admin-btn del mt-8" onclick="adminSupprimerNews('${n.id}')">🗑️ Supprimer</button>` : ''}
+    ${!apercu && isAdmin && !n.auto ? `<button class="admin-btn del mt-8" onclick="adminSupprimerNews('${n.id}')">🗑️ Supprimer</button>` : ''}
   </div>`;
 }
 function renderActualites() {
@@ -1262,6 +1332,7 @@ function synchroniserAnnuaire(users) {
     var f = ficheAnnuaire(u);
     Object.keys(f).forEach(function(k){ maj['annuaire/' + u.id + '/' + k] = f[k]; });
     maj['annuaire/' + u.id + '/actif'] = isAbonnementActif(u);
+    if (u.inscritLe) maj['annuaire/' + u.id + '/inscritLe'] = u.inscritLe;   // pour l'actualité « Bienvenue »
   });
   if (Object.keys(maj).length) db.ref().update(maj).catch(function(e){ console.warn('annuaire:', e.message); });
 }
@@ -1354,7 +1425,7 @@ function adminValidate(id){
   saveUsers(users);
   fbSyncUser(users[idx]); // Sync Firebase
   if (currentUser && currentUser.id === id) { currentUser.abonnement = users[idx].abonnement; saveCurrentUser(currentUser); updateSidebar(); }
-  if (db) db.ref('annuaire/' + id).update(Object.assign(ficheAnnuaire(users[idx]), { actif: true })).catch(function(){});
+  if (db) db.ref('annuaire/' + id).update(Object.assign(ficheAnnuaire(users[idx]), { actif: true }, users[idx].inscritLe ? { inscritLe: users[idx].inscritLe } : {})).catch(function(){});
   showToast('✅ Adhésion validée'); renderAdmin();
 }
 function adminDesactiver(id){
