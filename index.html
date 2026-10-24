@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=21"/>
+  <link rel="stylesheet" href="style.css?v=22"/>
 </head>
 <body>
 
@@ -60,16 +60,6 @@
         <div class="form-group"><label>Email (facultatif)</label><input type="email" id="regEmail" placeholder="votre@email.com"/></div>
         <div class="form-group"><label>Portable *</label><input type="tel" id="regTel" placeholder="06 XX XX XX XX" required/></div>
         <div class="form-group"><label>Date de naissance *</label><input type="date" id="regNaissance" required min="1900-01-01"/></div>
-        <div class="form-group"><label>Fonction dans le club</label>
-          <select id="regFonction">
-            <option value="Membre">Membre</option>
-            <option value="Président">Président</option>
-            <option value="Vice-Président">Vice-Président</option>
-            <option value="Secrétaire">Secrétaire</option>
-            <option value="Trésorier">Trésorier</option>
-            <option value="Capitaine">Capitaine</option>
-          </select>
-        </div>
         <div class="form-group"><label>Adresse *</label><input type="text" id="regAdresse" placeholder="N°, rue, code postal, ville" required/></div>
         <div class="form-group"><label>Mot de passe</label>
           <input type="password" id="regPassword" placeholder="Minimum 6 caractères" required minlength="6"/></div>
@@ -576,7 +566,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=21"></script>
+<script src="app.js?v=22"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

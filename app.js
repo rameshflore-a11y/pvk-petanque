@@ -417,7 +417,7 @@ function doRegister(e) {
   const prenom  = document.getElementById('regPrenom').value.trim();
   const nom     = document.getElementById('regNom').value.trim();
   const tel     = document.getElementById('regTel').value.trim();
-  const fonction= document.getElementById('regFonction').value;
+  const fonction= 'Membre'; // la fonction (bureau) est attribuée par l'admin
   const adresse = document.getElementById('regAdresse').value.trim();
   const naissance = document.getElementById('regNaissance').value; // AAAA-MM-JJ
   // Champs obligatoires
@@ -1292,12 +1292,28 @@ function renderAdminFinance(users) {
       '<div class="fin-head"><div class="admin-avatar">' + initials(u.prenom, u.nom) + '</div>' +
       '<div class="fin-ident"><div class="admin-member-name">' + u.prenom + ' ' + u.nom + '</div>' +
       '<div class="fin-meta">📞 ' + (u.tel || '—') + ' · 🎂 ' + formatDateFr(u.naissance) + '</div>' +
-      '<div class="fin-meta">📍 ' + (u.adresse || '—') + '</div></div></div>' +
+      '<div class="fin-meta">📍 ' + (u.adresse || '—') + '</div>' +
+      '<select class="fin-fonction" onchange="adminChangerFonction(\'' + u.id + '\', this.value)">' +
+        ['Membre'].concat(BUREAU_FONCTIONS).map(function(f){ return '<option' + ((u.fonction || 'Membre') === f ? ' selected' : '') + '>' + f + '</option>'; }).join('') +
+      '</select></div></div>' +
       buildGrilleMois(u.paiements, u.id, true) +
       '</div>';
   }).join('');
 }
 function filterFinance() { renderAdminFinance(getUsers()); }
+
+// Seul l'admin attribue les fonctions (Président, Trésorier…) : elles apparaissent dans « Le Club » et l'annuaire
+function adminChangerFonction(id, fonction) {
+  if (!currentUser || currentUser.role !== 'admin' || !db) return;
+  var users = getUsers(), idx = users.findIndex(function(u){ return u.id === id; });
+  Promise.all([db.ref('users/' + id + '/fonction').set(fonction), db.ref('annuaire/' + id + '/fonction').set(fonction)])
+    .then(function() {
+      if (idx >= 0) { users[idx].fonction = fonction; saveUsers(users); }
+      if (currentUser.id === id) { currentUser.fonction = fonction; saveCurrentUser(currentUser); }
+      showToast('✅ Fonction : ' + fonction);
+    })
+    .catch(function() { showToast('⚠️ Modification impossible'); renderAdminFinance(getUsers()); });
+}
 
 function adminTogglePaiement(userId, mois, paye) {
   if (!currentUser || currentUser.role !== 'admin') return;

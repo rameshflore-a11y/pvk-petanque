@@ -829,3 +829,8 @@ input:disabled { background: var(--bg); color: var(--text-muted); }
 .fest-desc { font-size: .82rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
 
 .fest-auto { display: inline-block; font-size: .7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #E0E7FF; color: #3730A3; }
+
+/* Fonction attribuée par l'admin */
+.fin-fonction { margin-top: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: .8rem; background: #fff; font-family: inherit; }
+/* Champ date : ne déborde plus sur iPhone */
+input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; }
