@@ -722,7 +722,7 @@ function adminSupprimerNews(id) {
 
 /* ===================== AGENDA ===================== */
 const MOIS_LONGS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const AGENDA_FRANCE_COMPLET = [...AGENDA_FRANCE, ...AGENDA_CIVIL];
+const AGENDA_FRANCE_COMPLET = [...AGENDA_FRANCE, ...AGENDA_CIVIL, ...AGENDA_MUSULMAN];   // les grandes fêtes musulmanes sont dans l'onglet France
 function dateEvenement(ev) { return new Date(ev.year, MOIS_LONGS.indexOf(ev.month), ev.day); }
 function aVenir(list) {
   const auj = new Date(); auj.setHours(0,0,0,0);
@@ -731,7 +731,7 @@ function aVenir(list) {
 
 function switchAgenda(mode) {
   agendaMode = mode;
-  const ids = { club:'tabAgendaClub', france:'tabAgendaFr', inde:'tabAgendaInde', musulman:'tabAgendaMus' };
+  const ids = { club:'tabAgendaClub', france:'tabAgendaFr', inde:'tabAgendaInde' };
   Object.keys(ids).forEach(m => {
     document.getElementById(ids[m])?.classList.toggle('active', m === mode);
   });
@@ -743,7 +743,7 @@ function renderAgenda() {
   document.getElementById('agendaAdminForm').classList.toggle('hidden', !(isAdmin && agendaMode === 'club'));
   const c = document.getElementById('agendaContainer');
   if (agendaMode !== 'club') {
-    afficherAgenda(aVenir(agendaMode === 'inde' ? AGENDA_INDE : agendaMode === 'musulman' ? AGENDA_MUSULMAN : AGENDA_FRANCE_COMPLET), false);
+    afficherAgenda(aVenir(agendaMode === 'inde' ? AGENDA_INDE : AGENDA_FRANCE_COMPLET), false);
     return;
   }
   c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
