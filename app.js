@@ -789,9 +789,7 @@ function renderAbonnement() {
 function renderMesPaiements(p) {
   var card = document.getElementById('mesPaiementsCard');
   if (!card) return;
-  var isAdmin = currentUser && currentUser.role === 'admin';
-  card.classList.toggle('hidden', isAdmin);
-  if (isAdmin) return;
+  // L'admin est aussi adhérent : il voit ses propres paiements comme tout le monde
   document.getElementById('mesPaiements').innerHTML = buildGrilleMois(p, null, false);
 }
 
@@ -911,7 +909,7 @@ function renderAdminWithUsers(users) {
   document.getElementById('statTotal').textContent   = users.length;
   document.getElementById('statActifs').textContent  = actifs.length;
   document.getElementById('statExpires').textContent = expires.length;
-  var encaisse = users.reduce(function(s, u){ return s + (u.role === 'admin' ? 0 : paiementsResume(u.paiements).montant); }, 0);
+  var encaisse = users.reduce(function(s, u){ return s + paiementsResume(u.paiements).montant; }, 0);
   document.getElementById('statCA').textContent      = encaisse + '€';
   renderAdminFinance(users);
   document.getElementById('adminMembersContainer').innerHTML = users.map(function(u) {
@@ -935,7 +933,8 @@ function renderAdminFinance(users) {
   var c = document.getElementById('adminFinanceContainer');
   if (!c) return;
   var q = (document.getElementById('financeSearch')?.value || '').toLowerCase();
-  var list = users.filter(function(u){ return u.role !== 'admin'; })
+  // Tous les adhérents, y compris l'admin (il paie aussi sa cotisation)
+  var list = users.filter(function(u){ return u.prenom || u.nom; })
     .filter(function(u){ return !q || (u.prenom + ' ' + u.nom).toLowerCase().includes(q); })
     .sort(function(a, b){ return (a.nom + a.prenom).localeCompare(b.nom + b.prenom); });
   if (!list.length) { c.innerHTML = '<p class="fin-vide">Aucun adhérent.</p>'; return; }
