@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-title" content="Pétanque VK"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=10"/>
+  <link rel="stylesheet" href="style.css?v=13"/>
 </head>
 <body>
 
@@ -104,6 +104,7 @@
     <ul class="sidebar-menu">
       <li onclick="nav('accueil')"><span class="menu-icon">🏠</span> Accueil</li>
       <li id="adminMenuItem" class="hidden" onclick="nav('admin')"><span class="menu-icon">⚙️</span> Administration</li>
+      <li id="vueMembreItem" class="hidden" onclick="basculerVueMembre()"><span class="menu-icon" id="vueMembreIcon">👁️</span> <span id="vueMembreLabel">Vue membre</span></li>
       <li onclick="nav('club')"><span class="menu-icon">🎯</span> Le Club</li>
       <li onclick="nav('actualites')"><span class="menu-icon">📰</span> Actualités</li>
       <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
@@ -121,6 +122,7 @@
   </nav>
 
   <main class="main-content">
+    <div id="bandeauVueMembre" class="bandeau-vue hidden" onclick="basculerVueMembre()">👁️ Vue membre — touchez ici pour revenir en vue admin</div>
 
     <!-- ACCUEIL -->
     <div id="page-accueil" class="page">
@@ -500,6 +502,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=11"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>

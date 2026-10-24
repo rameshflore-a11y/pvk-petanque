@@ -96,7 +96,8 @@ function fbLoadProfil(authUser) {
     var u = res[0].val() || { id: authUser.uid, email: estEmailTechnique(authUser.email) ? '' : authUser.email, prenom: '', nom: '' };
     u.id = authUser.uid;
     delete u.password;
-    u.role = res[1].val() ? 'admin' : 'membre';
+    u.estAdmin = !!res[1].val();          // vrai rôle (ne change pas en « vue membre »)
+    u.role = u.estAdmin ? 'admin' : 'membre';
     return u;
   });
 }
@@ -475,6 +476,22 @@ function updateSidebar() {
   const actif = isAbonnementActif(currentUser);
   document.getElementById('sidebarRole').textContent   = currentUser.role==='admin' ? '⚙️ Administrateur' : actif ? '✅ Adhérent' : '⚠️ Non-payant';
   document.getElementById('adminMenuItem').classList.toggle('hidden', currentUser.role!=='admin');
+  // Bascule « Vue membre » (réservée aux vrais admins)
+  const vueMembre = !!currentUser.estAdmin && currentUser.role !== 'admin';
+  document.getElementById('vueMembreItem').classList.toggle('hidden', !currentUser.estAdmin);
+  document.getElementById('vueMembreLabel').textContent = vueMembre ? 'Revenir en vue admin' : 'Vue membre';
+  document.getElementById('vueMembreIcon').textContent  = vueMembre ? '⚙️' : '👁️';
+  document.getElementById('bandeauVueMembre').classList.toggle('hidden', !vueMembre);
+}
+
+// L'admin voit l'appli exactement comme un membre (sans les outils admin), puis revient
+function basculerVueMembre() {
+  if (!currentUser || !currentUser.estAdmin) return;
+  currentUser.role = currentUser.role === 'admin' ? 'membre' : 'admin';
+  updateSidebar();
+  closeSidebar();
+  showPage('accueil');
+  showToast(currentUser.role === 'admin' ? '⚙️ Retour en vue admin' : '👁️ Vue membre : vous voyez l\'appli comme un adhérent');
 }
 
 function nav(page) { showPage(page); closeSidebar(); }
@@ -944,7 +961,6 @@ function renderAdminFinance(users) {
       '<div class="fin-ident"><div class="admin-member-name">' + u.prenom + ' ' + u.nom + '</div>' +
       '<div class="fin-meta">📞 ' + (u.tel || '—') + ' · 🎂 ' + formatDateFr(u.naissance) + '</div>' +
       '<div class="fin-meta">📍 ' + (u.adresse || '—') + '</div></div></div>' +
-      '<div class="fin-resume-wrap">' + buildResumeHtml(u.paiements) + '</div>' +
       buildGrilleMois(u.paiements, u.id, true) +
       '</div>';
   }).join('');
@@ -974,6 +990,7 @@ function adminValidate(id){
   users[idx].abonnement={saison:saison,paiement:getPaiementDate(),expire:getExpiry(saison),statut:'actif'};
   saveUsers(users);
   fbSyncUser(users[idx]); // Sync Firebase
+  if (currentUser && currentUser.id === id) { currentUser.abonnement = users[idx].abonnement; saveCurrentUser(currentUser); updateSidebar(); }
   if (db) db.ref('annuaire/' + id).update(Object.assign(ficheAnnuaire(users[idx]), { actif: true })).catch(function(){});
   showToast('✅ Adhésion validée'); renderAdmin();
 }

@@ -786,3 +786,12 @@ textarea.fin-search { resize: vertical; }
 .vide { color: var(--text-muted); font-size: .88rem; text-align: center; padding: 12px; }
 .pf-note { font-size: .75rem; color: var(--text-muted); margin-top: 4px; }
 input:disabled { background: var(--bg); color: var(--text-muted); }
+
+/* Grille des mois : 4 colonnes qui tiennent toujours dans l'écran */
+.fin-grille { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.fin-mois { min-width: 0; padding: 8px 4px; gap: 4px; }
+.fin-mois span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Bandeau « Vue membre » (admin) */
+.bandeau-vue { position: sticky; top: 0; z-index: 50; background: #1D4ED8; color: #fff; text-align: center;
+  font-size: .8rem; font-weight: 700; padding: 8px 12px; cursor: pointer; }
