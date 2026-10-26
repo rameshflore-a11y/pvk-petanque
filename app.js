@@ -237,11 +237,11 @@ const saveCurrentUser= u  => localStorage.setItem('pvk_current', JSON.stringify(
 const SAISON_COURANTE = '2026-2027';
 const SAISON_EXPIRE   = 'Sans date de fin';
 const COTISATION_MOIS = 5;   // € par mois
-const COTISATION_AN   = 60;  // € par an
-// Mois suivis : novembre et décembre 2026, puis tous les mois de 2027
-const MOIS_COTISATION = ['2026-11','2026-12'].concat(
-  ['01','02','03','04','05','06','07','08','09','10','11','12'].map(function(m){ return '2027-' + m; })
-);
+const COTISATION_TOTALE = 30; // 6 mois × 5 €
+// Cotisation sur 6 mois seulement : novembre 2026 → avril 2027.
+// Reconductible si tout le monde est d'accord : il suffira d'ajouter les mois suivants ici.
+const MOIS_COTISATION = ['2026-11','2026-12','2027-01','2027-02','2027-03','2027-04'];
+const PERIODE_COTISATION = 'Nov. 2026 → avr. 2027 (6 mois)';
 const MOIS_NOMS = ['Janv','Févr','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
 
 /* ===================== HELPERS ===================== */
@@ -1201,7 +1201,7 @@ function renderAbonnement() {
   const abo   = currentUser.abonnement;
   document.getElementById('aboStatut').textContent = actif ? '✅ Actif' : '❌ Inactif';
   document.getElementById('aboStatut').style.color = actif ? '#22c55e' : '#ef4444';
-  document.getElementById('aboSaison').textContent  = abo?.saison || '—';
+  document.getElementById('aboSaison').textContent  = PERIODE_COTISATION;
   document.getElementById('aboPaiement').textContent= abo?.paiement || '—';
   document.getElementById('aboExpire').textContent  = 'Sans date de fin';
   document.getElementById('renewSection').classList.toggle('hidden', actif);

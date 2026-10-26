@@ -112,7 +112,7 @@
       <li class="menu-sep"></li>
       <li onclick="logout()"><span class="menu-icon">🚪</span> Déconnexion</li>
     </ul>
-    <div class="sidebar-footer">Saison 2026-2027 · Osny 95520</div>
+    <div class="sidebar-footer">Nov. 2026 → avr. 2027 · Osny 95520</div>
   </nav>
 
   <main class="main-content">
@@ -286,7 +286,8 @@
           </div>
           <div class="abo-divider"></div>
           <div class="abo-rows">
-            <div class="abo-row"><span>Saison en cours</span><span class="abo-val">2026 – 2027</span></div>
+            <div class="abo-row"><span>Période</span><span class="abo-val">Nov. 2026 → avr. 2027 (6 mois)</span></div>
+            <div class="abo-row"><span>Ensuite</span><span class="abo-val">Reconduite si tout le monde est d'accord</span></div>
             <div class="abo-row"><span>Validité</span><span class="abo-val">Sans date de fin</span></div>
           </div>
         </div>
@@ -298,7 +299,7 @@
         <div class="card mb-12">
           <div class="section-title mb-8">Comment adhérer ?</div>
           <div class="step-row"><div class="step-num">1</div><span>Créez votre compte via "Inscription"</span></div>
-          <div class="step-row"><div class="step-num">2</div><span>Réglez 5 € par mois en espèces auprès du bureau</span></div>
+          <div class="step-row"><div class="step-num">2</div><span>Réglez 5 € par mois en espèces auprès de l'administrateur</span></div>
           <div class="step-row"><div class="step-num">3</div><span>L'administrateur valide votre adhésion et coche vos mois payés</span></div>
           <div class="step-row"><div class="step-num">4</div><span>Accès complet immédiat !</span></div>
         </div>
@@ -306,7 +307,7 @@
         <!-- PAIEMENT -->
         <div class="card paiement-card">
           <div class="section-title mb-8">💶 Paiement en espèces — 5 €/mois</div>
-          <p style="font-size:.88rem;color:var(--text-muted)">Pour le moment, la cotisation se règle uniquement en espèces, auprès d'un membre du bureau (lors des entraînements). L'administrateur coche ensuite le mois payé : vous le voyez dans « Mon abonnement ».</p>
+          <p style="font-size:.88rem;color:var(--text-muted)">La cotisation est prévue pour 6 mois, de novembre 2026 à avril 2027. Si tout le monde est d'accord, elle sera reconduite. Elle se règle uniquement en espèces, auprès de l'administrateur (lors des entraînements). L'administrateur coche ensuite le mois payé : vous le voyez dans « Mon abonnement ».</p>
         </div>
       </div>
     </div>
@@ -321,7 +322,7 @@
             <div class="member-card">
               <div class="mc-header">
                 <div class="mc-club">PÉTANQUE VETRI KAZHAGAM</div>
-                <div class="mc-season">Saison 2026 · 2027</div>
+                <div class="mc-season">Nov. 2026 → avr. 2027</div>
               </div>
               <div class="mc-body">
                 <div class="mc-avatar" id="mcAvatar">?</div>
@@ -360,7 +361,7 @@
           <div class="abo-divider"></div>
           <div class="abo-rows">
             <div class="abo-row"><span>Statut</span><span class="abo-val" id="aboStatut">—</span></div>
-            <div class="abo-row"><span>Saison</span><span class="abo-val" id="aboSaison">—</span></div>
+            <div class="abo-row"><span>Période</span><span class="abo-val" id="aboSaison">—</span></div>
             <div class="abo-row"><span>Paiement</span><span class="abo-val" id="aboPaiement">—</span></div>
             <div class="abo-row"><span>Validité</span><span class="abo-val" id="aboExpire">—</span></div>
           </div>
@@ -376,7 +377,7 @@
           <div id="mesPaiements"></div>
         </div>
         <div id="renewSection" class="hidden">
-          <div class="abo-alert mt-16">Adhésion inactive : réglez votre cotisation en espèces auprès du bureau, l'administrateur le réactivera.</div>
+          <div class="abo-alert mt-16">Adhésion inactive : réglez votre cotisation en espèces auprès de l'administrateur, qui la réactivera.</div>
         </div>
       </div>
     </div>
@@ -561,7 +562,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=31"></script>
+<script src="app.js?v=32"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
