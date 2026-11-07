@@ -563,6 +563,7 @@ function renderAccueil() {
   document.getElementById('statusIcon').textContent = actif ? '✅' : '❌';
   document.getElementById('statusVal').textContent  = actif ? 'Actif' : 'Inactif';
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
+  renderMeteo();
   // Aperçu actualités
   const preview = document.getElementById('newsPreview');
   preview.innerHTML = '<p class="vide">⏳ Chargement…</p>';
@@ -1251,6 +1252,80 @@ function afficherResultatTirage() {
       <a class="btn-primary btn-full tir-wa" href="https://wa.me/?text=${encodeURIComponent(texteTirage())}" target="_blank" rel="noopener">📤 Partager sur WhatsApp</a>
     </div>`;
   document.getElementById('tirResultat').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ===================== MÉTÉO À OSNY (Open-Meteo, gratuit, sans clé) ===================== */
+const METEO_URL = 'https://api.open-meteo.com/v1/forecast?latitude=49.0617&longitude=2.0631'
+  + '&current=temperature_2m,weather_code,wind_speed_10m'
+  + '&hourly=precipitation_probability,temperature_2m,weather_code'
+  + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+  + '&timezone=Europe%2FParis&forecast_days=4';
+// Codes météo WMO → libellé + pictogramme
+function meteoCode(c) {
+  if (c === 0) return ['Ensoleillé', '☀️'];
+  if (c <= 2) return ['Éclaircies', '🌤️'];
+  if (c === 3) return ['Couvert', '☁️'];
+  if (c === 45 || c === 48) return ['Brouillard', '🌫️'];
+  if (c >= 51 && c <= 57) return ['Bruine', '🌦️'];
+  if (c >= 61 && c <= 67) return ['Pluie', '🌧️'];
+  if (c >= 71 && c <= 77) return ['Neige', '🌨️'];
+  if (c >= 80 && c <= 82) return ['Averses', '🌦️'];
+  if (c === 85 || c === 86) return ['Averses de neige', '🌨️'];
+  if (c >= 95) return ['Orage', '⛈️'];
+  return ['—', '🌡️'];
+}
+let meteoCache = null, meteoCacheTs = 0;
+
+function chargerMeteo(callback) {
+  if (meteoCache && Date.now() - meteoCacheTs < 30 * 60000) { callback(meteoCache); return; }   // 30 min
+  fetch(METEO_URL).then(r => { if (!r.ok) throw new Error('meteo ' + r.status); return r.json(); })
+    .then(j => { meteoCache = j; meteoCacheTs = Date.now(); callback(j); })
+    .catch(() => callback(null));
+}
+
+// Avis pour la soirée (17h–21h) : aujourd'hui, ou demain s'il est déjà plus de 21h
+function avisSoiree(j) {
+  const maintenant = new Date();
+  const jour = new Date(maintenant);
+  if (maintenant.getHours() >= 21) jour.setDate(jour.getDate() + 1);
+  const iso = dateISO(jour);
+  const h = j.hourly || {};
+  const idx = (h.time || []).map((t, i) => [t, i]).filter(([t]) => t.slice(0, 10) === iso && +t.slice(11, 13) >= 17 && +t.slice(11, 13) <= 21).map(([, i]) => i);
+  if (!idx.length) return null;
+  const pluie = Math.max(...idx.map(i => h.precipitation_probability ? (h.precipitation_probability[i] || 0) : 0));
+  const temp = Math.round(idx.reduce((s, i) => s + (h.temperature_2m[i] || 0), 0) / idx.length);
+  const quand = jour.getDate() === maintenant.getDate() ? 'ce soir' : 'demain soir';
+  if (pluie >= 60) return { cls: 'ko', txt: `☔ Pluie probable ${quand} (${pluie} %) — environ ${temp}°C` };
+  if (pluie >= 30) return { cls: 'moyen', txt: `🌦️ Averses possibles ${quand} (${pluie} %) — environ ${temp}°C` };
+  return { cls: 'ok', txt: `✅ Temps sec ${quand} : bonne partie ! — environ ${temp}°C` };
+}
+
+function renderMeteo() {
+  const c = document.getElementById('meteoContenu');
+  if (!c) return;
+  c.innerHTML = '<p class="vide">⏳ Chargement de la météo…</p>';
+  chargerMeteo(function(j) {
+    if (!j || !j.current) { c.innerHTML = '<p class="vide">Météo indisponible pour le moment.</p>'; return; }
+    const [lib, ico] = meteoCode(j.current.weather_code);
+    const avis = avisSoiree(j);
+    const d = j.daily || {};
+    const jours = (d.time || []).slice(1, 4).map((t, k) => {
+      const i = k + 1;
+      const [l, ic] = meteoCode(d.weather_code[i]);
+      const nom = new Date(t + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short' });
+      return `<div class="meteo-jour"><div class="meteo-jnom">${nom}</div><div class="meteo-jico" title="${l}">${ic}</div>
+        <div class="meteo-jtemp">${Math.round(d.temperature_2m_min[i])}° / ${Math.round(d.temperature_2m_max[i])}°</div>
+        <div class="meteo-jpluie">💧 ${d.precipitation_probability_max ? d.precipitation_probability_max[i] : 0} %</div></div>`;
+    }).join('');
+    c.innerHTML = `
+      <div class="meteo-actuel">
+        <div class="meteo-ico">${ico}</div>
+        <div><div class="meteo-temp">${Math.round(j.current.temperature_2m)}°C</div>
+          <div class="meteo-lib">${lib} · vent ${Math.round(j.current.wind_speed_10m)} km/h</div></div>
+      </div>
+      ${avis ? `<div class="meteo-avis ${avis.cls}">${avis.txt}</div>` : ''}
+      <div class="meteo-jours">${jours}</div>`;
+  });
 }
 
 /* ===================== MON PROFIL ===================== */

@@ -868,3 +868,21 @@ input[type="date"] { -webkit-appearance: none; appearance: none; display: block;
 .tir-ligne .tir-poste { align-self: flex-start; padding: 2px 8px; min-height: 0; font-size: .68rem; }
 .tir-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .tir-wa { display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
+
+/* ===== MÉTÉO ===== */
+.meteo-card { margin-bottom: 14px; }
+.meteo-actuel { display: flex; align-items: center; gap: 14px; }
+.meteo-ico { font-size: 2.6rem; line-height: 1; }
+.meteo-temp { font-size: 1.8rem; font-weight: 800; color: var(--text); line-height: 1.1; }
+.meteo-lib { font-size: .85rem; color: var(--text-muted); }
+.meteo-avis { margin-top: 10px; padding: 8px 12px; border-radius: var(--radius-sm); font-size: .85rem; font-weight: 700; }
+.meteo-avis.ok { background: #DCFCE7; color: #166534; }
+.meteo-avis.moyen { background: #FEF3C7; color: #92400E; }
+.meteo-avis.ko { background: #DBEAFE; color: #1E3A8A; }
+.meteo-jours { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.meteo-jour { text-align: center; background: var(--bg); border-radius: var(--radius-sm); padding: 8px 4px; }
+.meteo-jnom { font-size: .75rem; font-weight: 700; text-transform: capitalize; color: var(--text-muted); }
+.meteo-jico { font-size: 1.5rem; margin: 2px 0; }
+.meteo-jtemp { font-size: .8rem; font-weight: 700; }
+.meteo-jpluie { font-size: .72rem; color: #1D4ED8; }
+.meteo-credit { font-size: .65rem; color: var(--text-muted); text-align: right; margin-top: 6px; }
