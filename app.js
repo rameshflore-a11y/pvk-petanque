@@ -563,7 +563,9 @@ function renderAccueil() {
   document.getElementById('statusIcon').textContent = actif ? '✅' : '❌';
   document.getElementById('statusVal').textContent  = actif ? 'Actif' : 'Inactif';
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
+  renderPresence();
   renderMeteo();
+  nettoyerPresences();
   // Aperçu actualités
   const preview = document.getElementById('newsPreview');
   preview.innerHTML = '<p class="vide">⏳ Chargement…</p>';
@@ -1155,6 +1157,13 @@ function renderTirage() {
       .sort((a,b) => a.nom.localeCompare(b.nom));
     tirJoueurs = membres.concat(tirJoueurs.filter(j => j.invite));
     afficherJoueursTirage();
+    // Ceux qui ont dit « Je viens ce soir » passent en tête de liste
+    chargerPresences(function(p) {
+      if (!p) return;
+      tirJoueurs.forEach(j => j.vient = !!p[j.id]);
+      tirJoueurs.sort((a,b) => (b.vient ? 1 : 0) - (a.vient ? 1 : 0) || (a.invite ? 1 : 0) - (b.invite ? 1 : 0) || a.nom.localeCompare(b.nom));
+      afficherJoueursTirage();
+    });
   });
 }
 
@@ -1168,7 +1177,7 @@ function afficherJoueursTirage() {
   const c = document.getElementById('tirJoueurs');
   c.innerHTML = tirJoueurs.length ? tirJoueurs.map((j, i) => `
     <div class="tir-joueur${j.poste ? ' present' : ''}">
-      <div class="tir-nom">${escapeHtml(j.nom)}${j.invite ? ' <span class="tir-invite">invité</span>' : ''}</div>
+      <div class="tir-nom">${escapeHtml(j.nom)}${j.invite ? ' <span class="tir-invite">invité</span>' : ''}${j.vient ? ' <span class="tir-vient">✋ vient ce soir</span>' : ''}</div>
       <div class="tir-postes">
         ${POSTES.map(p => `<button class="tir-poste ${p.id}${j.poste === p.id ? ' actif' : ''}" aria-pressed="${j.poste === p.id}" onclick="tirageChoisirPoste(${i}, '${p.id}')">${p.nom}</button>`).join('')}
       </div>
@@ -1326,6 +1335,64 @@ function renderMeteo() {
       ${avis ? `<div class="meteo-avis ${avis.cls}">${avis.txt}</div>` : ''}
       <div class="meteo-jours">${jours}</div>`;
   });
+}
+
+/* ===================== « JE VIENS CE SOIR » ===================== */
+// presences/<AAAA-MM-JJ>/<uid> = { nom, ts } — chacun ne peut écrire que sa propre ligne (règles Firebase)
+let presencesCache = {};   // { uid: {nom, ts} } pour aujourd'hui
+
+function chargerPresences(callback) {
+  if (!db) { callback(null); return; }
+  db.ref('presences/' + dateISO(new Date())).once('value')
+    .then(s => { presencesCache = s.val() || {}; callback(presencesCache); })
+    .catch(() => callback(null));
+}
+
+function renderPresence() {
+  const carte = document.getElementById('presenceCard');
+  if (!carte) return;
+  const adherent = currentUser && (currentUser.role === 'admin' || isAbonnementActif(currentUser));
+  carte.classList.toggle('hidden', !adherent);
+  if (!adherent) return;
+  const c = document.getElementById('presenceContenu');
+  c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  chargerPresences(function(p) {
+    if (p === null) { c.innerHTML = '<p class="vide">Indisponible pour le moment.</p>'; return; }
+    const liste = Object.keys(p).map(uid => Object.assign({ uid: uid }, p[uid])).sort((a,b) => (a.ts||0) - (b.ts||0));
+    const moi = !!p[currentUser.id];
+    c.innerHTML = `
+      <div class="pres-compte"><span class="pres-nb">${liste.length}</span> joueur${liste.length > 1 ? 's' : ''} ${liste.length > 1 ? 'viennent' : 'vient'} ce soir</div>
+      ${liste.length ? `<div class="pres-noms">${liste.map(x => `<span class="pres-nom${x.uid === currentUser.id ? ' moi' : ''}">${escapeHtml(x.nom || '')}</span>`).join('')}</div>`
+                     : '<p class="pf-note">Personne pour l\'instant. Soyez le premier !</p>'}
+      <button class="${moi ? 'btn-outline' : 'btn-primary'} btn-full mt-8" onclick="basculerPresence()">${moi ? 'Finalement, je ne viens pas' : '✋ Je viens ce soir'}</button>`;
+  });
+}
+
+function basculerPresence() {
+  if (!currentUser || !db) return;
+  const ref = db.ref('presences/' + dateISO(new Date()) + '/' + currentUser.id);
+  const vient = !presencesCache[currentUser.id];
+  const action = vient
+    ? ref.set({ nom: ((currentUser.prenom || '') + ' ' + (currentUser.nom || '')).trim().slice(0, 79) || 'Adhérent', ts: Date.now() })
+    : ref.remove();
+  action.then(function() {
+    showToast(vient ? '✋ C\'est noté, à ce soir !' : 'C\'est noté, vous ne venez pas ce soir');
+    renderPresence();
+  }).catch(function(e) {
+    showToast(/permission/i.test((e && (e.code || e.message)) || '') ? '⚠️ Refusé par Firebase : les règles doivent être mises à jour (presences)' : '⚠️ Enregistrement impossible');
+  });
+}
+
+// L'admin fait le ménage : on efface les présences de plus de 7 jours
+function nettoyerPresences() {
+  if (!db || !currentUser || currentUser.role !== 'admin') return;
+  const limite = new Date(); limite.setDate(limite.getDate() - 7);
+  const lim = dateISO(limite);
+  db.ref('presences').once('value').then(function(s) {
+    const maj = {};
+    s.forEach(function(j) { if (j.key < lim) maj['presences/' + j.key] = null; });
+    if (Object.keys(maj).length) db.ref().update(maj).catch(function(){});
+  }).catch(function(){});
 }
 
 /* ===================== MON PROFIL ===================== */

@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=34"/>
+  <link rel="stylesheet" href="style.css?v=35"/>
 </head>
 <body>
 
@@ -149,6 +149,12 @@
             <div class="counter-val" id="cntExpires">0</div>
             <div class="counter-lbl">Non-payants ⚠️</div>
           </div>
+        </div>
+
+        <!-- Je viens ce soir -->
+        <div class="card presence-card hidden" id="presenceCard">
+          <div class="section-title mb-8">🙋 Ce soir au terrain</div>
+          <div id="presenceContenu"></div>
         </div>
 
         <!-- Météo à Osny -->
@@ -597,7 +603,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=34"></script>
+<script src="app.js?v=35"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
