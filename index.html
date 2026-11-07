@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=28"/>
+  <link rel="stylesheet" href="style.css?v=33"/>
 </head>
 <body>
 
@@ -100,6 +100,7 @@
       <li onclick="nav('club')"><span class="menu-icon">🤝</span> Le Club</li>
       <li onclick="nav('actualites')"><span class="menu-icon">📰</span> Actualités</li>
       <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
+      <li onclick="nav('tirage')"><span class="menu-icon">🎲</span> Tirage des équipes</li>
       <li onclick="nav('films')"><span class="menu-icon">🎬</span> Films</li>
       <!-- Festivals : rubrique prête mais masquée pour le moment -->
       <li onclick="nav('contacts')"><span class="menu-icon">📞</span> Contacts</li>
@@ -172,7 +173,7 @@
           <div class="quick-card" onclick="showPage('agenda')"><span class="quick-icon">📅</span><span>Agenda</span></div>
           <div class="quick-card" onclick="showPage('actualites')"><span class="quick-icon">📰</span><span>Actualités</span></div>
           <div class="quick-card" onclick="showPage('profil')"><span class="quick-icon">👤</span><span>Mon profil</span></div>
-          <div class="quick-card" onclick="showPage('contacts')"><span class="quick-icon">📞</span><span>Contacts</span></div>
+          <div class="quick-card" onclick="showPage('tirage')"><span class="quick-icon">🎲</span><span>Tirage</span></div>
           <div class="quick-card" onclick="showPage('films')"><span class="quick-icon">🎬</span><span>Films</span></div>
         </div>
       </div>
@@ -486,6 +487,33 @@
       </div>
     </div>
 
+    <!-- TIRAGE DES ÉQUIPES -->
+    <div id="page-tirage" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🎲 Tirage des équipes</h2>
+        <div id="tirageAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents. <span onclick="showPage('adhesion')" class="link-red">Adhérez pour 5 €/mois →</span></div>
+        <div id="tirageContent">
+          <div class="card mb-12">
+            <div class="section-title mb-8">1. Nombre d'équipes</div>
+            <div class="tir-nb" id="tirNb"></div>
+          </div>
+          <div class="card mb-12">
+            <div class="section-title mb-8">2. Joueurs présents et leur poste</div>
+            <p class="pf-note mb-8">Touchez le poste de chaque joueur présent (touchez-le à nouveau pour l'enlever). Il faut exactement un tireur par équipe.</p>
+            <div id="tirCompteur" class="tir-compteur"></div>
+            <div id="tirJoueurs"></div>
+            <div class="tir-ajout">
+              <input type="text" id="tirInvite" class="fin-search" placeholder="Ajouter un invité (prénom)" maxlength="40" onkeydown="if(event.key==='Enter')tirageAjouterInvite()"/>
+              <button class="btn-outline" onclick="tirageAjouterInvite()">➕ Ajouter</button>
+            </div>
+            <button class="btn-outline btn-full mt-8" onclick="tirageEffacer()">Tout effacer</button>
+          </div>
+          <button class="btn-primary btn-full" onclick="tirageLancer()">🎲 3. Lancer le tirage</button>
+          <div id="tirResultat" class="mt-16"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- MON PROFIL -->
     <div id="page-profil" class="page">
       <div class="page-inner">
@@ -562,7 +590,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=32"></script>
+<script src="app.js?v=33"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

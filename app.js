@@ -319,7 +319,7 @@ function escapeHtml(s) {
 // Pages libres à tous les membres connectés (payants ou non)
 const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals'];
 // Pages réservées aux adhérents actifs
-const MEMBER_PAGES = ['contacts','carte','membres','films'];
+const MEMBER_PAGES = ['contacts','carte','membres','films','tirage'];
 // Page admin uniquement
 const ADMIN_PAGES = ['admin'];
 
@@ -529,6 +529,7 @@ function renderPage(page) {
     case 'membres':    renderMembres(); break;
     case 'profil':     renderProfil(); break;
     case 'films':      renderFilms(); break;
+    case 'tirage':     renderTirage(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
   }
@@ -1122,6 +1123,134 @@ function adminSupprimerFestival(id) {
   if (!confirm('Supprimer ce festival ?')) return;
   db.ref('festivals/' + id).remove().then(() => { showToast('🗑️ Festival supprimé'); renderFestivals(); })
     .catch(() => showToast('⚠️ Suppression impossible'));
+}
+
+/* ===================== TIRAGE DES ÉQUIPES ===================== */
+// 1) nombre d'équipes  2) poste de chaque présent (1 tireur par équipe)  3) tirage au hasard
+const POSTES = [ { id:'tireur', nom:'Tireur' }, { id:'demi', nom:'Demi' }, { id:'pointeur', nom:'Pointeur' } ];
+let tirNbEquipes = 4;
+let tirJoueurs = [];      // { id, nom, poste: null|'tireur'|'demi'|'pointeur', invite }
+let tirEquipes = null;
+
+function melanger(liste) {
+  const a = liste.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function renderTirage() {
+  const ok = canAccess('tirage');
+  document.getElementById('tirageAccessMsg').classList.toggle('hidden', ok);
+  document.getElementById('tirageContent').classList.toggle('hidden', !ok);
+  if (!ok) return;
+  afficherNbEquipes();
+  afficherJoueursTirage();
+  // Liste des adhérents (on garde les postes déjà choisis et les invités)
+  fbList('annuaire', function(list) {
+    if (list === null) return;
+    const anciens = {}; tirJoueurs.forEach(j => anciens[j.id] = j);
+    const membres = list.filter(u => u.actif && (u.prenom || u.nom))
+      .map(u => ({ id: u.id, nom: ((u.prenom || '') + ' ' + (u.nom || '')).trim(), poste: anciens[u.id] ? anciens[u.id].poste : null, invite: false }))
+      .sort((a,b) => a.nom.localeCompare(b.nom));
+    tirJoueurs = membres.concat(tirJoueurs.filter(j => j.invite));
+    afficherJoueursTirage();
+  });
+}
+
+function afficherNbEquipes() {
+  document.getElementById('tirNb').innerHTML = [2,4,6,8].map(n =>
+    `<button class="tir-choix${n === tirNbEquipes ? ' actif' : ''}" aria-pressed="${n === tirNbEquipes}" onclick="tirageNbEquipes(${n})">${n} équipes</button>`).join('');
+}
+function tirageNbEquipes(n) { tirNbEquipes = n; tirEquipes = null; afficherNbEquipes(); afficherCompteurTirage(); document.getElementById('tirResultat').innerHTML = ''; }
+
+function afficherJoueursTirage() {
+  const c = document.getElementById('tirJoueurs');
+  c.innerHTML = tirJoueurs.length ? tirJoueurs.map((j, i) => `
+    <div class="tir-joueur${j.poste ? ' present' : ''}">
+      <div class="tir-nom">${escapeHtml(j.nom)}${j.invite ? ' <span class="tir-invite">invité</span>' : ''}</div>
+      <div class="tir-postes">
+        ${POSTES.map(p => `<button class="tir-poste ${p.id}${j.poste === p.id ? ' actif' : ''}" aria-pressed="${j.poste === p.id}" onclick="tirageChoisirPoste(${i}, '${p.id}')">${p.nom}</button>`).join('')}
+      </div>
+    </div>`).join('') : '<p class="vide">⏳ Chargement des adhérents…</p>';
+  afficherCompteurTirage();
+}
+function afficherCompteurTirage() {
+  const nb = id => tirJoueurs.filter(j => j.poste === id).length;
+  const t = nb('tireur');
+  document.getElementById('tirCompteur').innerHTML =
+    `<span class="${t === tirNbEquipes ? 'ok' : 'ko'}">Tireurs ${t} / ${tirNbEquipes}</span>` +
+    `<span>Demis ${nb('demi')}</span><span>Pointeurs ${nb('pointeur')}</span>`;
+}
+function tirageChoisirPoste(i, poste) {
+  const j = tirJoueurs[i]; if (!j) return;
+  j.poste = j.poste === poste ? null : poste;   // toucher à nouveau = absent
+  tirEquipes = null;
+  afficherJoueursTirage();
+}
+function tirageAjouterInvite() {
+  const champ = document.getElementById('tirInvite');
+  const nom = champ.value.trim().slice(0, 40);
+  if (!nom) { showToast('✏️ Tapez le prénom de l\'invité'); return; }
+  tirJoueurs.push({ id: 'inv' + Date.now(), nom: nom, poste: null, invite: true });
+  champ.value = '';
+  afficherJoueursTirage();
+}
+function tirageEffacer() {
+  tirJoueurs = tirJoueurs.filter(j => !j.invite);
+  tirJoueurs.forEach(j => j.poste = null);
+  tirEquipes = null;
+  document.getElementById('tirResultat').innerHTML = '';
+  afficherJoueursTirage();
+}
+
+function tirageLancer() {
+  const n = tirNbEquipes;
+  const tireurs = tirJoueurs.filter(j => j.poste === 'tireur');
+  if (tireurs.length !== n) {
+    showToast(`⚠️ Il faut exactement ${n} tireurs (un par équipe) : vous en avez ${tireurs.length}`); return;
+  }
+  const equipes = melanger(tireurs).map(t => ({ tireur: t, demis: [], pointeurs: [] }));
+  // Répartition équilibrée : chaque joueur va dans une des équipes qui en ont le moins
+  ['demi', 'pointeur'].forEach(function(poste) {
+    const cle = poste === 'demi' ? 'demis' : 'pointeurs';
+    melanger(tirJoueurs.filter(j => j.poste === poste)).forEach(function(joueur) {
+      const taille = e => 1 + e.demis.length + e.pointeurs.length;
+      const min = Math.min(...equipes.map(e => e[cle].length));
+      let candidates = equipes.filter(e => e[cle].length === min);
+      const minTaille = Math.min(...candidates.map(taille));
+      candidates = candidates.filter(e => taille(e) === minTaille);
+      candidates[Math.floor(Math.random() * candidates.length)][cle].push(joueur);
+    });
+  });
+  tirEquipes = equipes;
+  afficherResultatTirage();
+}
+
+function texteTirage() {
+  const d = new Date().toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  return '🎲 Tirage PVK — ' + d + '\n\n' + tirEquipes.map((e, i) =>
+    'Équipe ' + (i + 1) + ' : Tireur ' + e.tireur.nom +
+    (e.demis.length ? ' · Demi ' + e.demis.map(j => j.nom).join(', ') : '') +
+    (e.pointeurs.length ? ' · Pointeur ' + e.pointeurs.map(j => j.nom).join(', ') : '')).join('\n');
+}
+function afficherResultatTirage() {
+  if (!tirEquipes) return;
+  const tailles = tirEquipes.map(e => 1 + e.demis.length + e.pointeurs.length);
+  const inegal = Math.max(...tailles) !== Math.min(...tailles);
+  const ligne = (label, liste, cls) => liste.length ? `<div class="tir-ligne"><span class="tir-poste ${cls} actif">${label}</span><span>${liste.map(j => escapeHtml(j.nom)).join(', ')}</span></div>` : '';
+  document.getElementById('tirResultat').innerHTML =
+    `<div class="section-title">Résultat du tirage</div>` +
+    (inegal ? '<p class="pf-note mb-8">Le nombre de joueurs ne tombe pas juste : certaines équipes ont un joueur de plus.</p>' : '') +
+    `<div class="tir-grille">` + tirEquipes.map((e, i) => `
+      <div class="card tir-equipe">
+        <div class="tir-titre">Équipe ${i + 1}</div>
+        ${ligne('Tireur', [e.tireur], 'tireur')}${ligne('Demi', e.demis, 'demi')}${ligne('Pointeur', e.pointeurs, 'pointeur')}
+      </div>`).join('') + `</div>
+    <div class="tir-actions">
+      <button class="btn-outline btn-full" onclick="tirageLancer()">🔁 Refaire le tirage</button>
+      <a class="btn-primary btn-full tir-wa" href="https://wa.me/?text=${encodeURIComponent(texteTirage())}" target="_blank" rel="noopener">📤 Partager sur WhatsApp</a>
+    </div>`;
+  document.getElementById('tirResultat').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ===================== MON PROFIL ===================== */
