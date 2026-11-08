@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=36"/>
+  <link rel="stylesheet" href="style.css?v=37"/>
 </head>
 <body>
 
@@ -163,6 +163,13 @@
           <div class="section-title mb-8">🌤️ Météo à Osny</div>
           <div id="meteoContenu"></div>
           <p class="meteo-credit">Données : Open-Meteo</p>
+        </div>
+
+        <!-- Cours de l'euro -->
+        <div class="card meteo-card">
+          <div class="section-title mb-8">💱 Cours de l'euro</div>
+          <div id="changeContenu"></div>
+          <p class="meteo-credit" id="changeSource">Taux de référence BCE · Frankfurter</p>
         </div>
 
         <!-- Statut abonnement -->
@@ -645,7 +652,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=36"></script>
+<script src="app.js?v=37"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

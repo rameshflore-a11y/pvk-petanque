@@ -566,6 +566,7 @@ function renderAccueil() {
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
   renderPresence();
   renderMeteo();
+  renderChange();
   nettoyerPresences();
   // Aperçu actualités
   const preview = document.getElementById('newsPreview');
@@ -1384,6 +1385,69 @@ function renderMeteo() {
       ${avis ? `<div class="meteo-avis ${avis.cls}">${avis.txt}</div>` : ''}
       <div class="meteo-jours">${jours}</div>`;
   });
+}
+
+/* ===================== COURS DE L'EURO (Frankfurter / BCE, gratuit, sans clé) ===================== */
+const DEVISES = [
+  { code:'INR', nom:'Roupie indienne',   drapeau:'🇮🇳', sym:'₹',   dec:2 },
+  { code:'USD', nom:'Dollar américain',  drapeau:'🇺🇸', sym:'$',   dec:4 },
+  { code:'GBP', nom:'Livre sterling',    drapeau:'🇬🇧', sym:'£',   dec:4 },
+  { code:'CHF', nom:'Franc suisse',      drapeau:'🇨🇭', sym:'CHF', dec:4 },
+  { code:'CAD', nom:'Dollar canadien',   drapeau:'🇨🇦', sym:'CA$', dec:4 }
+];
+let changeCache = null, changeCacheTs = 0, changeMontant = 1;
+
+function chargerChange(callback) {
+  if (changeCache && Date.now() - changeCacheTs < 60 * 60000) { callback(changeCache); return; }   // 1 h
+  const debut = new Date(); debut.setDate(debut.getDate() - 10);
+  const sym = DEVISES.map(d => d.code).join(',');
+  const urls = [
+    'https://api.frankfurter.dev/v1/' + dateISO(debut) + '..?base=EUR&symbols=' + sym,
+    'https://api.frankfurter.app/' + dateISO(debut) + '..?from=EUR&to=' + sym
+  ];
+  const essai = i => {
+    if (i >= urls.length) { callback(null); return; }
+    fetch(urls[i]).then(r => { if (!r.ok) throw new Error('change ' + r.status); return r.json(); })
+      .then(j => {
+        const dates = Object.keys(j.rates || {}).sort();
+        if (!dates.length) throw new Error('vide');
+        const der = dates[dates.length - 1], avant = dates.length > 1 ? dates[dates.length - 2] : null;
+        changeCache = { date: der, taux: j.rates[der], prec: avant ? j.rates[avant] : null };
+        changeCacheTs = Date.now(); callback(changeCache);
+      })
+      .catch(() => essai(i + 1));
+  };
+  essai(0);
+}
+
+function fmtNombre(n, dec) { return n.toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+
+function renderChange() {
+  const c = document.getElementById('changeContenu');
+  if (!c) return;
+  c.innerHTML = '<p class="vide">⏳ Chargement des cours…</p>';
+  chargerChange(function(x) {
+    if (!x) { c.innerHTML = '<p class="vide">Cours indisponibles pour le moment.</p>'; return; }
+    c.innerHTML = `
+      <div class="change-conv">Pour <input type="number" id="changeMontant" min="0" step="any" inputmode="decimal" value="${changeMontant}" oninput="majChange()"/> €</div>
+      <div id="changeLignes"></div>`;
+    majChange();
+    document.getElementById('changeSource').textContent = 'Taux de référence BCE du ' + formatDateFr(x.date) + ' · Frankfurter';
+  });
+}
+
+function majChange() {
+  const x = changeCache, el = document.getElementById('changeLignes');
+  if (!x || !el) return;
+  const v = parseFloat(String(document.getElementById('changeMontant').value).replace(',', '.'));
+  changeMontant = isNaN(v) || v < 0 ? 0 : v;
+  el.innerHTML = DEVISES.filter(d => x.taux[d.code]).map(d => {
+    const t = x.taux[d.code], p = x.prec ? x.prec[d.code] : null;
+    const fl = !p || t === p ? '<span class="change-eg">=</span>' : t > p ? '<span class="change-up">▲</span>' : '<span class="change-down">▼</span>';
+    return `<div class="change-ligne"><span class="change-drap">${d.drapeau}</span>
+      <span class="change-nom">${d.nom}</span>
+      <span class="change-val">${fmtNombre(t * changeMontant, changeMontant >= 10 ? 2 : d.dec)} ${d.sym}</span>${fl}</div>`;
+  }).join('');
 }
 
 /* ===================== « JE VIENS CE SOIR » ===================== */
