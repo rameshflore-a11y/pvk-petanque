@@ -317,7 +317,7 @@ function escapeHtml(s) {
 
 /* ===== CONTRÔLE D'ACCÈS ===== */
 // Pages libres à tous les membres connectés (payants ou non)
-const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals'];
+const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals','promos'];
 // Pages réservées aux adhérents actifs
 const MEMBER_PAGES = ['contacts','carte','membres','films','tirage'];
 // Page admin uniquement
@@ -529,6 +529,7 @@ function renderPage(page) {
     case 'membres':    renderMembres(); break;
     case 'profil':     renderProfil(); break;
     case 'films':      renderFilms(); break;
+    case 'promos':     renderPromos(); break;
     case 'tirage':     renderTirage(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
@@ -987,6 +988,54 @@ function adminPublierFilm() {
     renderFilms();
   }).catch(() => showToast('⚠️ Publication impossible'));
 }
+/* ===================== PROMOS ===================== */
+const RAYONS_PROMO = { whisky:'🥃 Whisky', poisson:'🐟 Poisson frais', viande:'🥩 Viande', autre:'🛒 Bon plan' };
+
+function renderPromos() {
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  document.getElementById('promosAdmin').classList.toggle('hidden', !isAdmin);
+  const c = document.getElementById('bonsPlansContainer');
+  c.innerHTML = '';
+  fbList('config/promos', function(list) {
+    if (!list) return;
+    const auj = dateISO(new Date());
+    list = list.filter(p => !p.jusquau || p.jusquau >= auj).sort((a,b) => (b.ts||0) - (a.ts||0));
+    if (!list.length) return;
+    c.innerHTML = '<div class="section-title mb-8">⭐ Bons plans du moment</div>' + list.map(p => {
+      const lien = lienSur(p.lien);
+      return `<div class="bonplan">
+        <span class="bonplan-rayon">${escapeHtml(RAYONS_PROMO[p.rayon] || RAYONS_PROMO.autre)}</span>
+        <div class="bonplan-produit">${escapeHtml(p.produit || '')}</div>
+        ${p.prix ? `<div class="bonplan-prix">${escapeHtml(p.prix)}</div>` : ''}
+        <div class="film-meta">${p.magasin ? '📍 ' + escapeHtml(p.magasin) : ''}${p.jusquau ? ' · jusqu\'au ' + formatDateFr(p.jusquau) : ''}</div>
+        ${lien ? `<a class="link-red" href="${escapeHtml(lien)}" target="_blank" rel="noopener">Voir l'offre →</a>` : ''}
+        ${isAdmin ? `<button class="admin-btn del mt-8" onclick="adminSupprimerBonPlan('${p.id}')">🗑️ Retirer</button>` : ''}
+      </div>`;
+    }).join('');
+  });
+}
+
+function adminPublierBonPlan() {
+  if (!db || !currentUser || currentUser.role !== 'admin') return;
+  const v = id => (document.getElementById(id).value || '').trim();
+  const produit = v('bpProduit');
+  if (!produit) { showToast('⚠️ Indiquez le produit'); return; }
+  const lien = v('bpLien');
+  if (lien && !lienSur(lien)) { showToast('⚠️ Le lien doit commencer par https://'); return; }
+  const bp = { rayon: v('bpRayon') || 'autre', produit: produit.slice(0,120), prix: v('bpPrix').slice(0,60),
+               magasin: v('bpMagasin').slice(0,80), lien: lien, jusquau: v('bpJusquau'), ts: Date.now() };
+  db.ref('config/promos').push(bp).then(function() {
+    ['bpProduit','bpPrix','bpMagasin','bpLien','bpJusquau'].forEach(id => document.getElementById(id).value = '');
+    showToast('⭐ Bon plan publié'); renderPromos();
+  }).catch(() => showToast('⚠️ Publication impossible'));
+}
+
+function adminSupprimerBonPlan(id) {
+  if (!confirm('Retirer ce bon plan ?')) return;
+  db.ref('config/promos/' + id).remove().then(() => { showToast('🗑️ Bon plan retiré'); renderPromos(); })
+    .catch(() => showToast('⚠️ Suppression impossible'));
+}
+
 function adminSupprimerFilm(id) {
   if (!confirm('Retirer ce film de l\'affiche ?')) return;
   db.ref('films/' + id).remove().then(() => { showToast('🗑️ Film retiré'); renderFilms(); })
