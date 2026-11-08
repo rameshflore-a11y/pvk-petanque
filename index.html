@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=37"/>
+  <link rel="stylesheet" href="style.css?v=39"/>
 </head>
 <body>
 
@@ -476,41 +476,14 @@
     <!-- PROMOS -->
     <div id="page-promos" class="page">
       <div class="page-inner">
-        <h2 class="page-title">🛒 Promos</h2>
-        <p class="page-subtitle">Whisky, poissons frais, viandes · magasins autour d'Osny et Cergy</p>
-
-        <div id="promosAdmin" class="card mb-12 hidden">
-          <div class="section-title mb-8">⭐ Ajouter un bon plan</div>
-          <select id="bpRayon" class="fin-search">
-            <option value="whisky">🥃 Whisky</option>
-            <option value="poisson">🐟 Poisson frais</option>
-            <option value="viande">🥩 Viande</option>
-            <option value="autre">🛒 Autre</option>
-          </select>
-          <input type="text" id="bpProduit" class="fin-search" maxlength="120" placeholder="Produit (ex : Johnnie Walker Black 70 cl)"/>
-          <input type="text" id="bpPrix" class="fin-search" maxlength="60" placeholder="Prix (ex : 24,90 € au lieu de 32 €)"/>
-          <input type="text" id="bpMagasin" class="fin-search" maxlength="80" placeholder="Magasin (ex : Leclerc Osny)"/>
-          <input type="url" id="bpLien" class="fin-search" placeholder="Lien (facultatif) https://…"/>
-          <div class="section-title mb-8">Valable jusqu'au</div>
-          <input type="date" id="bpJusquau" class="fin-search"/>
-          <button class="btn-primary btn-full" onclick="adminPublierBonPlan()">⭐ Publier le bon plan</button>
-        </div>
-
-        <div id="bonsPlansContainer"></div>
-
-        <div class="section-title mt-16 mb-8">Promos de la semaine par rayon</div>
+        <h2 class="page-title">🛒 Promos de la semaine</h2>
+        <p class="page-subtitle">Supermarchés autour d'Osny et Cergy</p>
         <div class="promo-grille">
           <a class="promo-btn" href="https://www.bonial.fr/Cergy/Promos/Whisky" target="_blank" rel="noopener"><span class="promo-ico">🥃</span><span>Whisky</span></a>
           <a class="promo-btn" href="https://www.bonial.fr/Cergy/Promos/Poisson" target="_blank" rel="noopener"><span class="promo-ico">🐟</span><span>Poisson</span></a>
           <a class="promo-btn" href="https://www.bonial.fr/Cergy/Promos/Viande" target="_blank" rel="noopener"><span class="promo-ico">🥩</span><span>Viande</span></a>
+          <a class="promo-btn" href="https://www.bonial.fr/Argenteuil/Promos/Fruits-Et-Legumes" target="_blank" rel="noopener"><span class="promo-ico">🍎🥕</span><span>Fruits &amp; légumes</span></a>
         </div>
-        <p class="pf-note">Toutes les promos des supermarchés autour de Cergy (Carrefour, Auchan, Lidl, Super U…), mises à jour chaque semaine.</p>
-
-        <div class="section-title mt-16 mb-8">Catalogues des magasins</div>
-        <a class="promo-ligne" href="https://www.tiendeo.fr/osny/e-leclerc" target="_blank" rel="noopener"><span class="promo-logo" style="background:#0066B3">E.L</span><span><b>E.Leclerc Osny</b><br/><small>Chemin des Hayettes, Osny</small></span><span class="promo-fleche">›</span></a>
-        <a class="promo-ligne" href="https://www.tiendeo.fr/Magasins/cergy/auchan-centre-commercial-des-fontaines/250950" target="_blank" rel="noopener"><span class="promo-logo" style="background:#E2001A">A</span><span><b>Auchan Cergy</b><br/><small>Centre commercial des 3 Fontaines</small></span><span class="promo-fleche">›</span></a>
-        <a class="promo-ligne" href="https://www.tiendeo.fr/cergy/carrefour" target="_blank" rel="noopener"><span class="promo-logo" style="background:#004E9F">C</span><span><b>Carrefour</b><br/><small>Catalogues autour de Cergy</small></span><span class="promo-fleche">›</span></a>
-        <p class="pf-note">Les catalogues sont mis à jour par les magasins eux-mêmes.</p>
       </div>
     </div>
 
@@ -652,7 +625,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=37"></script>
+<script src="app.js?v=39"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
