@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=47"/>
+  <link rel="stylesheet" href="style.css?v=48"/>
 </head>
 <body>
 
@@ -52,6 +52,7 @@
         <button type="submit" class="btn-primary btn-full">Se connecter</button>
         <p style="text-align:center;margin-top:12px;font-size:.85rem"><span class="link-red" style="cursor:pointer" onclick="motDePasseOublie()">Mot de passe oublié ?</span></p>
       </form>
+      <button type="button" class="btn-outline btn-full mt-8" onclick="decouvrirDemo()">👀 Découvrir l'appli (démo)</button>
       <form id="formRegister" class="hidden" onsubmit="doRegister(event)">
         <div class="form-row">
           <div class="form-group"><label>Prénom *</label><input type="text" id="regPrenom" placeholder="Prénom" required/></div>
@@ -711,10 +712,18 @@
   </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=47"></script>
+<script>
+/* Mode démo (lien « ?demo » ou bouton « Découvrir l'appli ») : faux membres, aucune donnée réelle */
+(function(){
+  var demo = /[?&]demo\b/.test(location.search);
+  try { if (demo) sessionStorage.setItem('pvk_demo', '1'); else demo = sessionStorage.getItem('pvk_demo') === '1'; } catch (e) {}
+  window.PVK_DEMO = demo;
+  if (demo) document.write('<script src="demo.js?v=1"><\/script>');
+  else ['app','auth','database'].forEach(function(m){ document.write('<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-' + m + '-compat.js"><\/script>'); });
+})();
+function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
+</script>
+<script src="app.js?v=48"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

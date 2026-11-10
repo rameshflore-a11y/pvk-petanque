@@ -980,3 +980,10 @@ input[type="date"] { -webkit-appearance: none; appearance: none; display: block;
 .alc-sanc span:last-child { text-align:right; }
 .alc-sanc.grave span:first-child { color:#B0193A; }
 .alc-conseil { margin:10px 0 0; font-weight:700; font-size:.88rem; }
+
+/* ===== Mode démo ===== */
+.bandeau-demo { position:fixed; left:0; right:0; top:0; z-index:9999; background:#F59E0B; color:#3B1A00; font-weight:800; font-size:.8rem; text-align:center; padding:5px 8px; }
+.bandeau-demo button { margin-left:8px; border:0; border-radius:999px; background:#3B1A00; color:#fff; font-weight:800; font-size:.75rem; padding:3px 10px; cursor:pointer; }
+body.mode-demo .topbar { top:30px; }
+body.mode-demo .main-content { margin-top:calc(var(--topbar-h) + 30px); }
+.bandeau-demo { height:30px; box-sizing:border-box; white-space:nowrap; overflow:hidden; }
