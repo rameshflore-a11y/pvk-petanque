@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=43"/>
+  <link rel="stylesheet" href="style.css?v=44"/>
 </head>
 <body>
 
@@ -103,6 +103,8 @@
       <li onclick="nav('tirage')"><span class="menu-icon">🎲</span> Tirage des équipes</li>
       <li onclick="nav('films')"><span class="menu-icon">🎬</span> Films</li>
       <li onclick="nav('promos')"><span class="menu-icon">🛒</span> Promos</li>
+      <li onclick="nav('carburants')"><span class="menu-icon">⛽</span> Carburants</li>
+      <li onclick="nav('voyage')"><span class="menu-icon">✈️</span> Voyage</li>
       <!-- Festivals : rubrique prête mais masquée pour le moment -->
       <li onclick="nav('contacts')"><span class="menu-icon">📞</span> Contacts</li>
       <li onclick="nav('adhesion')"><span class="menu-icon">🏅</span> Adhésion</li>
@@ -202,6 +204,9 @@
           <div class="quick-card" onclick="showPage('promos')"><span class="quick-icon">🛒</span><span>Promos</span></div>
           <div class="quick-card" onclick="showPage('tirage')"><span class="quick-icon">🎲</span><span>Tirage</span></div>
           <div class="quick-card" onclick="showPage('films')"><span class="quick-icon">🎬</span><span>Films</span></div>
+          <div class="quick-card" onclick="showPage('carburants')"><span class="quick-icon">⛽</span><span>Carburants</span></div>
+          <div class="quick-card" onclick="showPage('voyage')"><span class="quick-icon">✈️</span><span>Voyage</span></div>
+          <div class="quick-card" onclick="showPage('profil')"><span class="quick-icon">👤</span><span>Mon profil</span></div>
         </div>
       </div>
     </div>
@@ -490,10 +495,17 @@
           <a class="promo-btn" href="https://www.bonial.fr/Cergy/Promos/Viande" target="_blank" rel="noopener"><span class="promo-ico">🥩</span><span>Viande</span></a>
           <a class="promo-btn" href="https://www.bonial.fr/Argenteuil/Promos/Fruits-Et-Legumes" target="_blank" rel="noopener"><span class="promo-ico">🍎🥕</span><span>Fruits &amp; légumes</span></a>
         </div>
+      </div>
+    </div>
 
+    <!-- CARBURANTS -->
+    <div id="page-carburants" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">⛽ Carburants</h2>
+        <p class="page-subtitle">Les stations les moins chères du Val-d'Oise</p>
         <!-- Carburants -->
-        <div class="card mt-16">
-          <div class="section-title mb-8">⛽ Carburants les moins chers · Val-d'Oise</div>
+        <div class="card">
+          <div class="section-title mb-8">Les 3 stations les moins chères</div>
           <div class="carbu-onglets">
             <button class="carbu-onglet actif" data-c="gazole" onclick="choisirCarburant('gazole')">Gazole</button>
             <button class="carbu-onglet" data-c="e10" onclick="choisirCarburant('e10')">SP95-E10</button>
@@ -502,9 +514,16 @@
           <div id="carbuListe"></div>
           <p class="meteo-credit">Prix officiels des stations (prix-carburants.gouv.fr), mis à jour toutes les 10 min</p>
         </div>
+      </div>
+    </div>
 
+    <!-- VOYAGE -->
+    <div id="page-voyage" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">✈️ Voyage</h2>
+        <p class="page-subtitle">Billets d'avion Paris ⇄ Chennai</p>
         <!-- Avion -->
-        <div class="card mt-16">
+        <div class="card">
           <div class="section-title mb-8">✈️ Paris ⇄ Chennai · Emirates &amp; Air India</div>
           <div class="vol-dates">
             <label>Aller<input type="date" id="volAller"/></label>
@@ -654,7 +673,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=43"></script>
+<script src="app.js?v=44"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

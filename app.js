@@ -317,7 +317,7 @@ function escapeHtml(s) {
 
 /* ===== CONTRÔLE D'ACCÈS ===== */
 // Pages libres à tous les membres connectés (payants ou non)
-const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals','promos'];
+const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals','promos','carburants','voyage'];
 // Pages réservées aux adhérents actifs
 const MEMBER_PAGES = ['contacts','carte','membres','films','tirage'];
 // Page admin uniquement
@@ -529,7 +529,8 @@ function renderPage(page) {
     case 'membres':    renderMembres(); break;
     case 'profil':     renderProfil(); break;
     case 'films':      renderFilms(); break;
-    case 'promos':     renderPromos(); break;
+    case 'carburants': renderCarburants(); break;
+    case 'voyage':     initVols(); break;
     case 'tirage':     renderTirage(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
