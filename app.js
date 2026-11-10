@@ -317,7 +317,7 @@ function escapeHtml(s) {
 
 /* ===== CONTRÔLE D'ACCÈS ===== */
 // Pages libres à tous les membres connectés (payants ou non)
-const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals','promos','carburants','voyage'];
+const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals','promos','carburants','voyage','rasi'];
 // Pages réservées aux adhérents actifs
 const MEMBER_PAGES = ['contacts','carte','membres','films','tirage'];
 // Page admin uniquement
@@ -531,6 +531,7 @@ function renderPage(page) {
     case 'films':      renderFilms(); break;
     case 'carburants': renderCarburants(); break;
     case 'voyage':     initVols(); break;
+    case 'rasi':       renderRasi(); break;
     case 'tirage':     renderTirage(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
@@ -1271,7 +1272,7 @@ function afficherResultatTirage() {
 const METEO_URL = 'https://api.open-meteo.com/v1/forecast?latitude=49.0617&longitude=2.0631'
   + '&current=temperature_2m,weather_code,wind_speed_10m'
   + '&hourly=precipitation_probability,temperature_2m,weather_code'
-  + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+  + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'
   + '&timezone=Europe%2FParis&forecast_days=4';
 // Codes météo WMO → libellé + pictogramme
 function meteoCode(c) {
@@ -1507,6 +1508,132 @@ function renderKural() {
     .then(l => { kuralsListe = l; afficher(); })
     .catch(() => afficher());
 }
+
+/* ===================== RASI PALAN + RAHU KALAM (Osny) ===================== */
+const RASIS = [
+  ['மேஷம்','Bélier','♈'],['ரிஷபம்','Taureau','♉'],['மிதுனம்','Gémeaux','♊'],['கடகம்','Cancer','♋'],
+  ['சிம்மம்','Lion','♌'],['கன்னி','Vierge','♍'],['துலாம்','Balance','♎'],['விருச்சிகம்','Scorpion','♏'],
+  ['தனுசு','Sagittaire','♐'],['மகரம்','Capricorne','♑'],['கும்பம்','Verseau','♒'],['மீனம்','Poissons','♓']
+];
+const PALAN = {
+  pothu: [
+    ['இன்று உங்கள் முயற்சிகளுக்கு நல்ல பலன் கிடைக்கும்.','Vos efforts porteront leurs fruits aujourd\'hui.'],
+    ['மனதில் இருந்த கவலைகள் நீங்கி நிம்மதி பிறக்கும்.','Vos soucis s\'éloignent, la sérénité revient.'],
+    ['எதிர்பாராத ஒரு நல்ல செய்தி உங்களைத் தேடி வரும்.','Une bonne nouvelle inattendue vous attend.'],
+    ['பொறுமையுடன் செயல்பட்டால் வெற்றி நிச்சயம்.','Avec de la patience, le succès est assuré.'],
+    ['நண்பர்களின் ஆதரவு உங்களுக்குப் பெரிதும் உதவும்.','Le soutien de vos amis vous sera précieux.'],
+    ['புதிய முயற்சிகளைத் தொடங்க ஏற்ற நாள்.','Journée idéale pour lancer de nouveaux projets.'],
+    ['வார்த்தைகளில் கவனம் தேவை; பேசும் முன் யோசியுங்கள்.','Attention à vos paroles : réfléchissez avant de parler.'],
+    ['நீண்ட நாள் காத்திருந்த ஒரு விஷயம் நிறைவேறும்.','Une chose attendue depuis longtemps se réalise.'],
+    ['இன்று உங்கள் தன்னம்பிக்கை அதிகரிக்கும்.','Votre confiance en vous grandit aujourd\'hui.'],
+    ['சிறிய தடைகள் வந்தாலும் விரைவில் விலகும்.','De petits obstacles, vite surmontés.'],
+    ['பெரியவர்களின் ஆலோசனை நல்ல வழி காட்டும்.','Les conseils des aînés vous montreront le bon chemin.'],
+    ['அமைதியாக இருந்தால் பல பிரச்சினைகள் தானாகத் தீரும்.','En restant calme, bien des problèmes se règlent d\'eux-mêmes.'],
+    ['உங்கள் திறமைக்கு இன்று பாராட்டு கிடைக்கும்.','Votre talent sera reconnu aujourd\'hui.'],
+    ['அவசர முடிவுகளைத் தவிர்ப்பது நல்லது.','Mieux vaut éviter les décisions hâtives.'],
+    ['மகிழ்ச்சியான தருணங்கள் நிறைந்த நாள்.','Une journée pleine de moments joyeux.'],
+    ['பழைய நண்பர் ஒருவரைச் சந்திக்கும் வாய்ப்பு உண்டு.','Vous pourriez retrouver un vieil ami.'],
+    ['இன்று செய்யும் நற்செயல் பின்னர் பெரிய பலன் தரும்.','Une bonne action aujourd\'hui portera ses fruits plus tard.'],
+    ['திட்டமிட்டுச் செயல்பட்டால் நாள் சிறப்பாக அமையும்.','Avec un peu d\'organisation, la journée sera excellente.'],
+    ['மாலை நேரம் உற்சாகமாக இருக்கும்.','La soirée s\'annonce pleine d\'entrain.'],
+    ['இறைவன் அருளால் காரியங்கள் சுமுகமாக நடக்கும்.','Par la grâce divine, tout se déroule sans accroc.']
+  ],
+  kudumbam: [
+    ['குடும்பத்தில் மகிழ்ச்சி நிலவும்.','La joie règne dans la famille.'],
+    ['வாழ்க்கைத் துணையுடன் இனிமையான நேரம் செலவிடுவீர்கள்.','Vous passerez un doux moment avec votre conjoint.'],
+    ['உறவினர்களிடமிருந்து நல்ல செய்தி வரும்.','De bonnes nouvelles arrivent de la famille.'],
+    ['சிறிய கருத்து வேறுபாடுகளைப் பெரிதாக்க வேண்டாம்.','Ne grossissez pas les petits désaccords.'],
+    ['பிள்ளைகளால் பெருமை சேரும்.','Vos enfants vous rendront fier.'],
+    ['வீட்டில் சுப நிகழ்ச்சி பற்றிய பேச்சு எழும்.','On parlera d\'un heureux événement à la maison.'],
+    ['அன்பானவர்களுடன் பேசி மனம் லேசாகும்.','Parler avec vos proches vous allégera le cœur.'],
+    ['பெற்றோரின் ஆசி உங்களுக்குக் கிடைக்கும்.','Vous recevrez la bénédiction de vos parents.'],
+    ['குடும்பத்தினருக்கு நேரம் ஒதுக்குங்கள்.','Accordez du temps à votre famille.'],
+    ['விருந்தினர் வருகையால் வீடு கலகலப்பாகும்.','Une visite animera la maison.'],
+    ['துணையின் ஆலோசனை பயனுள்ளதாக இருக்கும்.','Les conseils de votre conjoint seront utiles.'],
+    ['பழைய மனக்கசப்புகள் மறையும்.','Les vieilles rancœurs s\'effacent.'],
+    ['நண்பர்களுடன் மகிழ்ச்சியான சந்திப்பு உண்டு.','Une rencontre joyeuse avec des amis.'],
+    ['அன்பான வார்த்தைகள் உறவை வலுப்படுத்தும்.','Des mots tendres renforceront vos liens.']
+  ],
+  thozhil: [
+    ['பண வரவு திருப்திகரமாக இருக்கும்.','Rentrées d\'argent satisfaisantes.'],
+    ['வேலையில் உங்கள் உழைப்புக்கு அங்கீகாரம் கிடைக்கும்.','Votre travail sera reconnu.'],
+    ['தேவையற்ற செலவுகளைக் குறைப்பது நல்லது.','Mieux vaut limiter les dépenses inutiles.'],
+    ['புதிய வாய்ப்பு ஒன்று உங்களைத் தேடி வரும்.','Une nouvelle opportunité se présente.'],
+    ['சக ஊழியர்களின் ஒத்துழைப்பு கிடைக்கும்.','Vos collègues vous apporteront leur aide.'],
+    ['பெரிய முதலீடுகளுக்கு இன்று காத்திருப்பது நல்லது.','Pour les gros investissements, mieux vaut attendre.'],
+    ['நிலுவையில் இருந்த பணம் கைக்கு வரும்.','Un argent attendu arrive enfin.'],
+    ['வேலையில் கூடுதல் பொறுப்புகள் வரலாம்.','De nouvelles responsabilités au travail.'],
+    ['வியாபாரத்தில் லாபம் அதிகரிக்கும்.','Les affaires deviennent plus rentables.'],
+    ['கடன் கொடுப்பதையும் வாங்குவதையும் தவிர்க்கவும்.','Évitez de prêter ou d\'emprunter.'],
+    ['திட்டமிட்ட வேலைகள் நேரத்தில் முடியும்.','Les tâches prévues seront finies à temps.'],
+    ['மேலதிகாரிகளின் பாராட்டு கிடைக்கும்.','Vos supérieurs vous félicitent.'],
+    ['சேமிப்பைப் பற்றி யோசிக்க நல்ல நாள்.','Bonne journée pour penser à l\'épargne.'],
+    ['பணியில் கவனம் சிதறாமல் இருக்கட்டும்.','Restez concentré sur votre travail.']
+  ],
+  udal: [
+    ['உடல் நலம் சீராக இருக்கும்.','Bonne santé.'],
+    ['போதுமான ஓய்வு எடுத்துக்கொள்ளுங்கள்.','Prenez assez de repos.'],
+    ['நடைப்பயிற்சி உற்சாகம் தரும்.','Une marche vous redonnera de l\'énergie.'],
+    ['உணவில் கவனம் தேவை.','Faites attention à votre alimentation.'],
+    ['போதுமான தண்ணீர் குடியுங்கள்.','Buvez suffisamment d\'eau.'],
+    ['மன அழுத்தத்தைத் தவிர்க்க தியானம் உதவும்.','La méditation vous aidera à éviter le stress.'],
+    ['சுறுசுறுப்பாக இருப்பீர்கள்.','Vous serez plein d\'énergie.'],
+    ['இன்று இரவு சீக்கிரம் தூங்குவது நல்லது.','Couchez-vous tôt ce soir.'],
+    ['சிறு உடல் சோர்வு வந்து போகும்.','Une petite fatigue passagère.'],
+    ['பெத்தாங்க் விளையாட்டு உடலுக்கும் மனதுக்கும் நல்லது!','Une partie de pétanque fera du bien au corps et à l\'esprit !']
+  ],
+  niram: [['சிவப்பு','rouge'],['வெள்ளை','blanc'],['மஞ்சள்','jaune'],['பச்சை','vert'],['நீலம்','bleu'],['ஆரஞ்சு','orange'],['இளஞ்சிவப்பு','rose'],['ஊதா','violet'],['தங்க நிறம்','doré'],['கருநீலம்','bleu marine']]
+};
+let rasiChoix = 0;
+try { const v = parseInt(localStorage.getItem('pvk_rasi'), 10); if (v >= 0 && v < 12) rasiChoix = v; } catch (e) {}
+
+function hachage(t) { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+function choisirRasi(i) { rasiChoix = i; try { localStorage.setItem('pvk_rasi', String(i)); } catch (e) {} afficherRasi(); }
+
+function afficherRasi() {
+  const g = document.getElementById('rasiGrille'), c = document.getElementById('rasiPalan');
+  if (!g || !c) return;
+  g.innerHTML = RASIS.map((r, i) => `<button class="rasi-btn${i === rasiChoix ? ' actif' : ''}" onclick="choisirRasi(${i})"><span class="rasi-ico">${r[2]}</span><span class="rasi-ta">${r[0]}</span><span class="rasi-fr">${r[1]}</span></button>`).join('');
+  const jour = dateISO(new Date()), r = RASIS[rasiChoix];
+  const pick = (cat) => PALAN[cat][hachage(jour + '|' + rasiChoix + '|' + cat) % PALAN[cat].length];
+  const ligne = (ico, lib, p) => `<div class="palan-ligne"><div class="palan-lib">${ico} ${lib}</div><div class="palan-ta">${p[0]}</div><div class="palan-fr">${p[1]}</div></div>`;
+  const n = pick('niram'), num = hachage(jour + '|' + rasiChoix + '|num') % 9 + 1;
+  c.innerHTML = `<div class="section-title mb-8">${r[2]} ${r[0]} · ${r[1]} — ${formatDateFr(jour)}</div>
+    ${ligne('✨', 'பொது · Général', pick('pothu'))}
+    ${ligne('❤️', 'குடும்பம் · Famille', pick('kudumbam'))}
+    ${ligne('💼', 'தொழில் & பணம் · Travail & argent', pick('thozhil'))}
+    ${ligne('💪', 'ஆரோக்கியம் · Santé', pick('udal'))}
+    <div class="palan-chance">🍀 அதிர்ஷ்ட எண் · chiffre : <b>${num}</b> &nbsp;·&nbsp; 🎨 அதிர்ஷ்ட நிறம் · couleur : <b>${n[0]} (${n[1]})</b></div>`;
+}
+
+// Rahu kalam, Yamagandam, Kuligai : journée (lever → coucher) découpée en 8 parts ; part selon le jour (0 = dimanche)
+const KALAMS = [
+  ['ராகு காலம்', 'Rahu kalam', [8, 2, 7, 5, 6, 4, 3]],
+  ['எமகண்டம்', 'Yamagandam', [5, 4, 3, 2, 1, 7, 6]],
+  ['குளிகை', 'Kuligai', [7, 6, 5, 4, 3, 2, 1]]
+];
+function hhmm(d) { return String(d.getHours()).padStart(2, '0') + 'h' + String(d.getMinutes()).padStart(2, '0'); }
+
+function renderKalam() {
+  const c = document.getElementById('kalamContenu');
+  if (!c) return;
+  c.innerHTML = '<p class="vide">⏳ Calcul des horaires…</p>';
+  chargerMeteo(function(j) {
+    const d = j && j.daily;
+    if (!d || !d.sunrise || !d.sunset || !d.sunrise[0]) { c.innerHTML = '<p class="vide">Horaires indisponibles pour le moment.</p>'; return; }
+    const lever = new Date(d.sunrise[0]), coucher = new Date(d.sunset[0]);
+    const part = (coucher - lever) / 8, wd = lever.getDay(), now = new Date();
+    c.innerHTML = `<div class="kalam-soleil">🌅 Lever ${hhmm(lever)} · 🌇 Coucher ${hhmm(coucher)}</div>` + KALAMS.map(k => {
+      const debut = new Date(lever.getTime() + (k[2][wd] - 1) * part), fin = new Date(debut.getTime() + part);
+      const enCours = now >= debut && now < fin;
+      return `<div class="kalam-ligne${enCours ? ' en-cours' : ''}"><div><div class="kalam-ta">${k[0]}</div><div class="kalam-fr">${k[1]}</div></div>
+        <div class="kalam-h">${hhmm(debut)} – ${hhmm(fin)}${enCours ? '<span class="kalam-now">en ce moment</span>' : ''}</div></div>`;
+    }).join('');
+  });
+}
+
+function renderRasi() { renderKalam(); afficherRasi(); }
 
 /* ===================== « JE VIENS CE SOIR » ===================== */
 // presences/<AAAA-MM-JJ>/<uid> = { nom, ts } — chacun ne peut écrire que sa propre ligne (règles Firebase)

@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=44"/>
+  <link rel="stylesheet" href="style.css?v=45"/>
 </head>
 <body>
 
@@ -105,6 +105,7 @@
       <li onclick="nav('promos')"><span class="menu-icon">🛒</span> Promos</li>
       <li onclick="nav('carburants')"><span class="menu-icon">⛽</span> Carburants</li>
       <li onclick="nav('voyage')"><span class="menu-icon">✈️</span> Voyage</li>
+      <li onclick="nav('rasi')"><span class="menu-icon">🔮</span> ராசி பலன்</li>
       <!-- Festivals : rubrique prête mais masquée pour le moment -->
       <li onclick="nav('contacts')"><span class="menu-icon">📞</span> Contacts</li>
       <li onclick="nav('adhesion')"><span class="menu-icon">🏅</span> Adhésion</li>
@@ -206,7 +207,7 @@
           <div class="quick-card" onclick="showPage('films')"><span class="quick-icon">🎬</span><span>Films</span></div>
           <div class="quick-card" onclick="showPage('carburants')"><span class="quick-icon">⛽</span><span>Carburants</span></div>
           <div class="quick-card" onclick="showPage('voyage')"><span class="quick-icon">✈️</span><span>Voyage</span></div>
-          <div class="quick-card" onclick="showPage('profil')"><span class="quick-icon">👤</span><span>Mon profil</span></div>
+          <div class="quick-card" onclick="showPage('rasi')"><span class="quick-icon">🔮</span><span>ராசி பலன்</span></div>
         </div>
       </div>
     </div>
@@ -535,6 +536,21 @@
       </div>
     </div>
 
+    <!-- RASI PALAN -->
+    <div id="page-rasi" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🔮 ராசி பலன்</h2>
+        <p class="page-subtitle">Horoscope tamoul du jour · horaires pour Osny</p>
+        <div class="card mb-12">
+          <div class="section-title mb-8">🕉️ இன்றைய நேரங்கள் · Osny</div>
+          <div id="kalamContenu"></div>
+        </div>
+        <div class="rasi-grille" id="rasiGrille"></div>
+        <div class="card mt-16" id="rasiPalan"></div>
+        <p class="pf-note" style="text-align:center">Horoscope pour s'amuser : textes composés automatiquement, pas écrits par un astrologue.</p>
+      </div>
+    </div>
+
     <!-- FESTIVALS -->
     <div id="page-festivals" class="page">
       <div class="page-inner">
@@ -673,7 +689,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=45"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

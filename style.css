@@ -946,3 +946,23 @@ input[type="date"] { -webkit-appearance: none; appearance: none; display: block;
 .kural-expl { font-size:.9rem; line-height:1.5; margin-bottom:8px; }
 .kural-lang { display:inline-block; font-size:.68rem; font-weight:800; background:#B0193A; color:#fff; border-radius:6px; padding:1px 6px; margin-right:6px; vertical-align:middle; }
 .kural-src { font-size:.72rem; color:var(--text-muted); text-align:right; }
+
+/* ===== Rasi palan ===== */
+.rasi-grille { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+.rasi-btn { display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 2px; border-radius:12px; border:1px solid #eee; background:var(--card); cursor:pointer; color:var(--text); }
+.rasi-btn.actif { background:#B0193A; border-color:#B0193A; color:#fff; }
+.rasi-ico { font-size:1.4rem; line-height:1; }
+.rasi-ta { font-size:.72rem; font-weight:800; }
+.rasi-fr { font-size:.62rem; opacity:.8; }
+.palan-ligne { padding:8px 0; border-bottom:1px solid rgba(0,0,0,.06); }
+.palan-lib { font-size:.72rem; font-weight:800; color:#92400E; text-transform:uppercase; letter-spacing:.3px; }
+.palan-ta { font-weight:700; margin-top:2px; }
+.palan-fr { font-size:.85rem; color:var(--text-muted); }
+.palan-chance { margin-top:10px; font-size:.85rem; background:#FFF8E7; border-radius:10px; padding:8px 10px; }
+.kalam-soleil { font-size:.82rem; color:var(--text-muted); margin-bottom:6px; }
+.kalam-ligne { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-radius:10px; margin-bottom:6px; background:#F7F7F9; }
+.kalam-ligne.en-cours { background:#FEE2E2; }
+.kalam-ta { font-weight:800; }
+.kalam-fr { font-size:.75rem; color:var(--text-muted); }
+.kalam-h { font-weight:800; color:#B0193A; text-align:right; }
+.kalam-now { display:block; font-size:.68rem; color:#DC2626; font-weight:800; }
