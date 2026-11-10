@@ -567,6 +567,7 @@ function renderAccueil() {
   document.getElementById('statusVal').textContent  = actif ? 'Actif' : 'Inactif';
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
   renderPresence();
+  appliquerFete();
   renderKural();
   renderMeteo();
   renderChange();
@@ -1635,6 +1636,60 @@ function renderKalam() {
 
 function renderRasi() { renderKalam(); afficherRasi(); }
 
+/* ===================== THÈME FESTIF AUTOMATIQUE ===================== */
+// Les dates viennent des agendas (vérifiés) ; le décor s'affiche quelques jours autour de la fête.
+const FETES = [
+  { id:'deepavali', motif:/Deepavali/i, avant:2, apres:2, deco:['🪔','✨','🪔','🎆','✨','🪔'], voeux:'🪔 தீபாவளி நல்வாழ்த்துக்கள் · Joyeux Deepavali' },
+  { id:'pongal', motif:/Pongal/i, avant:1, apres:2, deco:['🌾','☀️','🍚','🐄','🌾','🎋'], voeux:'🌾 பொங்கலோ பொங்கல் ! · Joyeux Pongal' },
+  { id:'holi', motif:/^Holi/i, avant:1, apres:1, deco:['🎨','💜','💛','💚','💙','🧡'], voeux:'🎨 Happy Holi · Joyeuse fête des couleurs' },
+  { id:'puthandu', motif:/Puthandu/i, avant:0, apres:1, deco:['🎊','🌸','🥭','🎉','🌸','🎊'], voeux:'🎊 இனிய தமிழ்ப் புத்தாண்டு நல்வாழ்த்துக்கள்' }
+];
+function feteDuJour() {
+  const test = (location.search.match(/[?&]fete=([a-z]+)/) || [])[1];
+  const auj = new Date(); auj.setHours(12, 0, 0, 0);
+  if (test === 'noel' || (auj.getMonth() === 11 && auj.getDate() >= 20 && auj.getDate() <= 26))
+    return { id:'noel', deco:['🎄','⭐','❄️','🎁','❄️','⭐'], voeux:'🎄 Joyeux Noël · இனிய கிறிஸ்துமஸ் வாழ்த்துக்கள்' };
+  if (test === 'nouvelan' || (auj.getMonth() === 11 && auj.getDate() === 31) || (auj.getMonth() === 0 && auj.getDate() <= 2))
+    return { id:'nouvelan', deco:['🎆','🥂','✨','🎇','🎉','✨'], voeux:'🎆 Bonne année · இனிய புத்தாண்டு நல்வாழ்த்துக்கள்' };
+  const forcee = FETES.find(f => f.id === test);
+  if (forcee) return forcee;
+  for (const f of FETES) {
+    for (const ev of AGENDA_INDE) {
+      if (!f.motif.test(ev.name || '')) continue;
+      const d = dateEvenement(ev); d.setHours(12, 0, 0, 0);
+      const ecart = Math.round((auj - d) / 86400000);
+      if (ecart >= -f.avant && ecart <= f.apres) return f;
+    }
+  }
+  return null;
+}
+function appliquerFete() {
+  const f = feteDuJour();
+  document.body.className = document.body.className.replace(/\bfete-\S+/g, '').trim();
+  const deco = document.getElementById('feteDeco'), voeux = document.getElementById('feteVoeux');
+  if (!deco || !voeux) return;
+  if (!f) { deco.innerHTML = ''; voeux.classList.add('hidden'); return; }
+  document.body.classList.add('fete-' + f.id);
+  deco.innerHTML = f.deco.map((e, i) => `<span style="left:${8 + i * 15}%;animation-delay:${(i * 0.7) % 3}s">${e}</span>`).join('');
+  voeux.textContent = f.voeux; voeux.classList.remove('hidden');
+}
+
+/* ===================== PETITES ANIMATIONS ===================== */
+function celebrer(el) {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = (el || document.body).getBoundingClientRect();
+  const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  ['🎯','🎉','✋','⭐','🎯','🎉','✨','⭐'].forEach((e, i) => {
+    const s = document.createElement('span');
+    s.className = 'burst'; s.textContent = e;
+    const a = (i / 8) * 2 * Math.PI, d = 70 + Math.random() * 40;
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d - 30 + 'px');
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 1100);
+  });
+}
+
 /* ===================== « JE VIENS CE SOIR » ===================== */
 // presences/<AAAA-MM-JJ>/<uid> = { nom, ts } — chacun ne peut écrire que sa propre ligne (règles Firebase)
 let presencesCache = {};   // { uid: {nom, ts} } pour aujourd'hui
@@ -1674,6 +1729,7 @@ function basculerPresence() {
     ? ref.set({ nom: ((currentUser.prenom || '') + ' ' + (currentUser.nom || '')).trim().slice(0, 79) || 'Adhérent', ts: Date.now() })
     : ref.remove();
   action.then(function() {
+    if (vient) celebrer(document.querySelector('#presenceContenu .btn-primary, #presenceContenu .btn-outline'));
     showToast(vient ? '✋ C\'est noté, à ce soir !' : 'C\'est noté, vous ne venez pas ce soir');
     renderPresence();
   }).catch(function(e) {

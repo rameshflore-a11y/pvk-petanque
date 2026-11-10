@@ -987,3 +987,49 @@ input[type="date"] { -webkit-appearance: none; appearance: none; display: block;
 body.mode-demo .topbar { top:30px; }
 body.mode-demo .main-content { margin-top:calc(var(--topbar-h) + 30px); }
 .bandeau-demo { height:30px; box-sizing:border-box; white-space:nowrap; overflow:hidden; }
+
+/* ===== Thème festif ===== */
+.welcome-banner { position:relative; overflow:hidden; }
+.welcome-banner > div:not(.fete-deco) { position:relative; z-index:1; }
+.fete-deco { position:absolute; inset:0; pointer-events:none; }
+.fete-deco span { position:absolute; bottom:-30px; font-size:1.4rem; opacity:.85; animation:flotte 4s ease-in-out infinite; }
+@keyframes flotte { 0% { transform:translateY(0) rotate(0); opacity:0; } 15% { opacity:.9; } 100% { transform:translateY(-120px) rotate(20deg); opacity:0; } }
+.fete-voeux { margin-top:8px; font-size:.8rem; font-weight:800; color:#fff; background:rgba(255,255,255,.18); border-radius:999px; padding:4px 10px; display:inline-block; }
+body.fete-deepavali .welcome-banner, body.fete-deepavali .topbar { background:linear-gradient(135deg,#7A1027,#C2410C 60%,#F59E0B); }
+body.fete-pongal .welcome-banner, body.fete-pongal .topbar { background:linear-gradient(135deg,#166534,#65A30D 55%,#EAB308); }
+body.fete-holi .welcome-banner, body.fete-holi .topbar { background:linear-gradient(135deg,#7C3AED,#DB2777 40%,#F59E0B 75%,#10B981); }
+body.fete-puthandu .welcome-banner, body.fete-puthandu .topbar { background:linear-gradient(135deg,#9D174D,#EA580C 60%,#FACC15); }
+body.fete-noel .welcome-banner, body.fete-noel .topbar { background:linear-gradient(135deg,#14532D,#166534 50%,#B91C1C); }
+body.fete-nouvelan .welcome-banner, body.fete-nouvelan .topbar { background:linear-gradient(135deg,#1E1B4B,#4338CA 60%,#A21CAF); }
+body.fete-noel .fete-deco span { animation-name:neige; top:-30px; bottom:auto; }
+@keyframes neige { 0% { transform:translateY(0); opacity:0; } 15% { opacity:.9; } 100% { transform:translateY(130px) rotate(-20deg); opacity:0; } }
+
+/* ===== Petites animations ===== */
+@keyframes apparait { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+.page.active .card, .page.active .welcome-banner, .page.active .status-card, .page.active .news-card, .page.active .quick-card,
+.page.active .film-card, .page.active .promo-btn, .page.active .rasi-btn, .page.active .membre-card { animation:apparait .35s ease-out both; }
+.page.active .page-inner > *:nth-child(2) { animation-delay:.04s; } .page.active .page-inner > *:nth-child(3) { animation-delay:.08s; }
+.page.active .page-inner > *:nth-child(4) { animation-delay:.12s; } .page.active .page-inner > *:nth-child(5) { animation-delay:.16s; }
+.page.active .page-inner > *:nth-child(6) { animation-delay:.2s; }
+.quick-card, .promo-btn, .rasi-btn, .btn-primary, .btn-outline { transition:transform .12s ease; }
+.quick-card:active, .promo-btn:active, .rasi-btn:active, .btn-primary:active, .btn-outline:active { transform:scale(.96); }
+.burst { position:fixed; z-index:10000; font-size:1.6rem; pointer-events:none; transform:translate(-50%,-50%); animation:burst 1s ease-out forwards; }
+@keyframes burst { 0% { opacity:1; transform:translate(-50%,-50%) scale(.6); } 100% { opacity:0; transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); } }
+@media (prefers-reduced-motion: reduce) { .page.active *, .fete-deco span { animation:none !important; } }
+
+/* ===== Mode sombre (suit le réglage du téléphone) ===== */
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#111117; --card:#1C1C26; --text:#EDEDF2; --text-muted:#A2A6B3; --border:#2E2E3B; --shadow:0 2px 12px rgba(0,0,0,.45); }
+  input, select, textarea, .fin-search, .change-conv input, .vol-dates input { background:#262633 !important; color:var(--text) !important; border-color:#3A3A4A !important; }
+  .carbu-onglet, .rasi-btn { background:#262633; border-color:#3A3A4A; color:var(--text); }
+  .kural-texte, .palan-chance { background:#2A2418; color:#FFD98A; }
+  .kalam-ligne, .alc-verres { background:#262633; }
+  .kalam-ligne.en-cours { background:#4A1D24; }
+  .alc-box { background:#3A3218; } .alc-box.jeune { background:#4A1D24; }
+  .access-msg { background:#3A3218; color:#FCD34D; }
+  .bonplan-rayon, .carbu-rang { background:#3A3218; color:#FCD34D; }
+  .bottom-nav, .sidebar { background:#1C1C26 !important; }
+  .btn-outline, .fin-mois, .fin-fonction, .tir-choix, .tir-poste { background:#262633; }
+  .btn-outline:hover { background:var(--red); }
+  .fin-mois.paye { background:#14331F; border-color:#166534; color:#86EFAC; }
+}

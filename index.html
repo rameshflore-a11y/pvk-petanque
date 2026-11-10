@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <meta name="theme-color" content="#C41E3A"/>
+  <meta name="color-scheme" content="light dark"/>
+<meta name="theme-color" content="#C41E3A"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
@@ -14,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=48"/>
+  <link rel="stylesheet" href="style.css?v=49"/>
 </head>
 <body>
 
@@ -127,10 +128,12 @@
     <!-- ACCUEIL -->
     <div id="page-accueil" class="page">
       <div class="page-inner">
-        <div class="welcome-banner">
+        <div class="welcome-banner" id="welcomeBanner">
+          <div class="fete-deco" id="feteDeco" aria-hidden="true"></div>
           <div>
             <h2 class="welcome-title" id="welcomeName">Bienvenue !</h2>
             <p class="welcome-sub">Pétanque Vetri Kazhagam · Osny</p>
+            <p class="fete-voeux hidden" id="feteVoeux"></p>
           </div>
         </div>
 
@@ -723,7 +726,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=48"></script>
+<script src="app.js?v=49"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
