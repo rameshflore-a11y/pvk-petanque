@@ -966,3 +966,17 @@ input[type="date"] { -webkit-appearance: none; appearance: none; display: block;
 .kalam-fr { font-size:.75rem; color:var(--text-muted); }
 .kalam-h { font-weight:800; color:#B0193A; text-align:right; }
 .kalam-now { display:block; font-size:.68rem; color:#DC2626; font-weight:800; }
+
+/* ===== Alcool au volant ===== */
+.alc-taux { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.alc-box { border-radius:12px; padding:10px; text-align:center; background:#FEF3C7; }
+.alc-box.jeune { background:#FEE2E2; }
+.alc-lib { font-size:.75rem; font-weight:700; color:var(--text-muted); }
+.alc-val { font-size:1.5rem; font-weight:800; color:#B0193A; line-height:1.2; }
+.alc-sub { font-size:.7rem; color:var(--text-muted); }
+.alc-verres { background:#F7F7F9; border-radius:10px; padding:8px 10px; font-size:.9rem; line-height:1.6; }
+.alc-sanc { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px solid rgba(0,0,0,.06); font-size:.82rem; }
+.alc-sanc span:first-child { font-weight:800; white-space:nowrap; }
+.alc-sanc span:last-child { text-align:right; }
+.alc-sanc.grave span:first-child { color:#B0193A; }
+.alc-conseil { margin:10px 0 0; font-weight:700; font-size:.88rem; }
