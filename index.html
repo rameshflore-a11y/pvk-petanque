@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=41"/>
+  <link rel="stylesheet" href="style.css?v=42"/>
 </head>
 <body>
 
@@ -484,6 +484,29 @@
           <a class="promo-btn" href="https://www.bonial.fr/Cergy/Promos/Viande" target="_blank" rel="noopener"><span class="promo-ico">🥩</span><span>Viande</span></a>
           <a class="promo-btn" href="https://www.bonial.fr/Argenteuil/Promos/Fruits-Et-Legumes" target="_blank" rel="noopener"><span class="promo-ico">🍎🥕</span><span>Fruits &amp; légumes</span></a>
         </div>
+
+        <!-- Carburants -->
+        <div class="card mt-16">
+          <div class="section-title mb-8">⛽ Carburants les moins chers · Val-d'Oise</div>
+          <div class="carbu-onglets">
+            <button class="carbu-onglet actif" data-c="gazole" onclick="choisirCarburant('gazole')">Gazole</button>
+            <button class="carbu-onglet" data-c="e10" onclick="choisirCarburant('e10')">SP95-E10</button>
+            <button class="carbu-onglet" data-c="sp98" onclick="choisirCarburant('sp98')">SP98</button>
+          </div>
+          <div id="carbuListe"></div>
+          <p class="meteo-credit">Prix officiels des stations (prix-carburants.gouv.fr), mis à jour toutes les 10 min</p>
+        </div>
+
+        <!-- Avion -->
+        <div class="card mt-16">
+          <div class="section-title mb-8">✈️ Paris ⇄ Chennai · Emirates &amp; Air India</div>
+          <div class="vol-dates">
+            <label>Aller<input type="date" id="volAller"/></label>
+            <label>Retour<input type="date" id="volRetour"/></label>
+          </div>
+          <button class="btn-primary btn-full mt-8" onclick="ouvrirVols()">🔎 Voir les prix</button>
+          <p class="pf-note">Vols Emirates et Air India uniquement, du moins cher au plus cher : repérez ceux à moins de 500 €.</p>
+        </div>
       </div>
     </div>
 
@@ -625,7 +648,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="app.js?v=41"></script>
+<script src="app.js?v=42"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

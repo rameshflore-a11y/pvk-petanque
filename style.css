@@ -920,3 +920,20 @@ input[type="date"] { -webkit-appearance: none; appearance: none; display: block;
 .change-up { color:#16A34A; font-size:.75rem; width:14px; text-align:center; }
 .change-down { color:#DC2626; font-size:.75rem; width:14px; text-align:center; }
 .change-eg { color:var(--text-muted); font-size:.75rem; width:14px; text-align:center; }
+
+/* ===== Carburants & vols ===== */
+.carbu-onglets { display:flex; gap:6px; margin-bottom:8px; }
+.carbu-onglet { flex:1; padding:8px 4px; border-radius:999px; border:1px solid #ddd; background:#fff; font-weight:700; font-size:.85rem; color:var(--text); cursor:pointer; }
+.carbu-onglet.actif { background:#B0193A; border-color:#B0193A; color:#fff; }
+.carbu-ligne { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(0,0,0,.06); }
+.carbu-ligne:last-child { border-bottom:none; }
+.carbu-rang { flex:none; width:28px; height:28px; border-radius:50%; background:#FEF3C7; color:#92400E; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.carbu-info { flex:1; min-width:0; }
+.carbu-ville { font-weight:800; }
+.carbu-adr, .carbu-maj { font-size:.78rem; color:var(--text-muted); }
+.carbu-droite { text-align:right; }
+.carbu-prix { font-weight:800; font-size:1.1rem; color:#B0193A; white-space:nowrap; }
+.carbu-iti { font-size:.8rem; }
+.vol-dates { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.vol-dates label { display:flex; flex-direction:column; gap:4px; font-size:.8rem; font-weight:700; color:var(--text-muted); }
+.vol-dates input { padding:8px; border:1px solid #ddd; border-radius:8px; font-size:.95rem; }

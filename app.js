@@ -529,6 +529,7 @@ function renderPage(page) {
     case 'membres':    renderMembres(); break;
     case 'profil':     renderProfil(); break;
     case 'films':      renderFilms(); break;
+    case 'promos':     renderPromos(); break;
     case 'tirage':     renderTirage(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
@@ -1400,6 +1401,87 @@ function majChange() {
       <span class="change-val">${fmtNombre(t * changeMontant, changeMontant >= 10 ? 2 : d.dec)} ${d.sym}</span>${fl}</div>`;
   }).join('');
 }
+
+/* ===================== CARBURANTS (données officielles, gratuites, sans clé) ===================== */
+const CARBU_API = 'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records';
+let carbuChoix = 'gazole';
+const carbuCache = {};
+
+function chargerCarburant(f, callback) {
+  const c = carbuCache[f];
+  if (c && Date.now() - c.ts < 15 * 60000) { callback(c.liste); return; }
+  const base = 'select=' + encodeURIComponent(['adresse','ville','cp',f + '_prix',f + '_maj'].join(',')) + '&order_by=' + f + '_prix&limit=30';
+  const essais = [
+    base + '&where=' + encodeURIComponent('code_departement="95" and ' + f + '_prix is not null'),
+    base + '&where=' + encodeURIComponent('startswith(cp,"95") and ' + f + '_prix is not null'),
+    base + '&refine=' + encodeURIComponent('code_departement:95')
+  ];
+  const essai = i => {
+    if (i >= essais.length) { callback(null); return; }
+    fetch(CARBU_API + '?' + essais[i]).then(r => { if (!r.ok) throw new Error('carbu ' + r.status); return r.json(); })
+      .then(j => {
+        const limite = Date.now() - 8 * 86400000;   // on ignore les prix de plus de 8 jours
+        const liste = (j.results || []).filter(x => x[f + '_prix'] && String(x.cp || '').startsWith('95')
+            && (!x[f + '_maj'] || new Date(x[f + '_maj']).getTime() >= limite))
+          .slice(0, 3).map(x => ({ adresse: x.adresse || '', ville: x.ville || '', cp: x.cp || '', prix: +x[f + '_prix'], maj: x[f + '_maj'] || '' }));
+        if (!j.results) throw new Error('vide');
+        carbuCache[f] = { ts: Date.now(), liste: liste }; callback(liste);
+      })
+      .catch(() => essai(i + 1));
+  };
+  essai(0);
+}
+
+function choisirCarburant(f) { carbuChoix = f; renderCarburants(); }
+
+function majDepuis(iso) {
+  if (!iso) return '';
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3600000);
+  if (isNaN(h)) return '';
+  return h < 1 ? 'mis à jour il y a moins d\'1 h' : h < 24 ? 'mis à jour il y a ' + h + ' h' : 'mis à jour il y a ' + Math.floor(h / 24) + ' j';
+}
+
+function renderCarburants() {
+  document.querySelectorAll('.carbu-onglet').forEach(b => b.classList.toggle('actif', b.dataset.c === carbuChoix));
+  const c = document.getElementById('carbuListe');
+  if (!c) return;
+  c.innerHTML = '<p class="vide">⏳ Recherche des stations…</p>';
+  const f = carbuChoix;
+  chargerCarburant(f, function(l) {
+    if (f !== carbuChoix) return;
+    if (!l) { c.innerHTML = '<p class="vide">Prix indisponibles pour le moment.</p>'; return; }
+    if (!l.length) { c.innerHTML = '<p class="vide">Aucun prix récent trouvé.</p>'; return; }
+    c.innerHTML = l.map((s, i) => {
+      const q = encodeURIComponent((s.adresse + ' ' + s.cp + ' ' + s.ville).trim());
+      return `<div class="carbu-ligne">
+        <div class="carbu-rang">${i + 1}</div>
+        <div class="carbu-info"><div class="carbu-ville">${escapeHtml(s.ville)}</div>
+          <div class="carbu-adr">${escapeHtml(s.adresse)}</div>
+          <div class="carbu-maj">${majDepuis(s.maj)}</div></div>
+        <div class="carbu-droite"><div class="carbu-prix">${fmtNombre(s.prix, 3)} €</div>
+          <a class="link-red carbu-iti" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">📍 Itinéraire</a></div>
+      </div>`;
+    }).join('');
+  });
+}
+
+/* ===================== VOLS PARIS ⇄ CHENNAI ===================== */
+function initVols() {
+  const a = document.getElementById('volAller'), r = document.getElementById('volRetour');
+  if (!a || a.value) return;
+  const d1 = new Date(); d1.setDate(d1.getDate() + 30);
+  const d2 = new Date(d1); d2.setDate(d2.getDate() + 21);
+  a.value = dateISO(d1); r.value = dateISO(d2);
+}
+
+function ouvrirVols() {
+  const a = document.getElementById('volAller').value, r = document.getElementById('volRetour').value;
+  if (!a || !r) { showToast('⚠️ Choisissez les dates aller et retour'); return; }
+  if (r <= a) { showToast('⚠️ Le retour doit être après l\'aller'); return; }
+  window.open('https://www.kayak.fr/flights/PAR-MAA/' + a + '/' + r + '?sort=price_a&fs=airlines=EK,AI', '_blank', 'noopener');
+}
+
+function renderPromos() { renderCarburants(); initVols(); }
 
 /* ===================== « JE VIENS CE SOIR » ===================== */
 // presences/<AAAA-MM-JJ>/<uid> = { nom, ts } — chacun ne peut écrire que sa propre ligne (règles Firebase)
