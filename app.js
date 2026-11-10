@@ -319,7 +319,7 @@ function escapeHtml(s) {
 // Pages libres à tous les membres connectés (payants ou non)
 const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals','promos','carburants','voyage','rasi'];
 // Pages réservées aux adhérents actifs
-const MEMBER_PAGES = ['contacts','carte','membres','films','tirage'];
+const MEMBER_PAGES = ['contacts','carte','membres','films','tirage','score'];
 // Page admin uniquement
 const ADMIN_PAGES = ['admin'];
 
@@ -533,6 +533,7 @@ function renderPage(page) {
     case 'voyage':     initVols(); break;
     case 'rasi':       renderRasi(); break;
     case 'tirage':     renderTirage(); break;
+    case 'score':      renderScore(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
   }
@@ -568,9 +569,12 @@ function renderAccueil() {
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
   renderPresence();
   appliquerFete();
+  renderLive();
+  nettoyerMatchs();
   renderKural();
   renderMeteo();
   renderChange();
+  renderOr();
   nettoyerPresences();
   // Aperçu actualités
   const preview = document.getElementById('newsPreview');
@@ -1263,6 +1267,7 @@ function afficherResultatTirage() {
         ${ligne('Tireur', [e.tireur], 'tireur')}${ligne('Demi', e.demis, 'demi')}${ligne('Pointeur', e.pointeurs, 'pointeur')}
       </div>`).join('') + `</div>
     <div class="tir-actions">
+      <button class="btn-primary btn-full" onclick="scoreDepuisTirage()">🔴 Score en direct</button>
       <button class="btn-outline btn-full" onclick="tirageLancer()">🔁 Refaire le tirage</button>
       <a class="btn-primary btn-full tir-wa" href="https://wa.me/?text=${encodeURIComponent(texteTirage())}" target="_blank" rel="noopener">📤 Partager sur WhatsApp</a>
     </div>`;
@@ -1687,6 +1692,165 @@ function celebrer(el) {
     s.style.setProperty('--dx', Math.cos(a) * d + 'px'); s.style.setProperty('--dy', Math.sin(a) * d - 30 + 'px');
     document.body.appendChild(s);
     setTimeout(() => s.remove(), 1100);
+  });
+}
+
+/* ===================== SCORE EN DIRECT ===================== */
+// matchs/<AAAA-MM-JJ>/<id> = { eqA:{nom,joueurs}, eqB:{nom,joueurs}, ts, par, menes:{ <id>:{eq:'A'|'B', pts, ts} } }
+const SCORE_GAGNANT = 13;
+let matchsCache = null, matchsSig = '', scoreTimer = null;
+function cheminMatchs() { return 'matchs/' + dateISO(new Date()); }
+function peutScorer() { return currentUser && (currentUser.role === 'admin' || isAbonnementActif(currentUser)); }
+
+function chargerMatchs(callback) {
+  if (!db || !peutScorer()) { callback(null); return; }
+  db.ref(cheminMatchs()).once('value')
+    .then(s => { const v = s.val() || {}; matchsCache = Object.keys(v).map(k => Object.assign({ id: k }, v[k])).sort((a, b) => (a.ts || 0) - (b.ts || 0)); callback(matchsCache); })
+    .catch(() => callback(null));
+}
+function etatMatch(m) {
+  const menes = Object.keys(m.menes || {}).map(k => Object.assign({ id: k }, m.menes[k])).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  let A = 0, B = 0; menes.forEach(x => { if (x.eq === 'A') A += +x.pts || 0; else B += +x.pts || 0; });
+  const but = +m.but || SCORE_GAGNANT;
+  const fini = A >= but || B >= but;
+  return { A: A, B: B, but: but, menes: menes, fini: fini, gagnant: fini ? (A > B ? 'A' : 'B') : null };
+}
+function joueursTxt(eq) { return (eq && Array.isArray(eq.joueurs) && eq.joueurs.length) ? eq.joueurs.map(escapeHtml).join(', ') : ''; }
+
+function carteMatch(m) {
+  const e = etatMatch(m), nA = escapeHtml((m.eqA || {}).nom || 'Équipe 1'), nB = escapeHtml((m.eqB || {}).nom || 'Équipe 2');
+  const boutons = eq => e.fini ? '' : `<div class="sc-btns">${[1,2,3,4,5,6].map(p => `<button onclick="marquerPoints('${m.id}','${eq}',${p})">+${p}</button>`).join('')}</div>`;
+  const cote = (eq, nom, pts, jt) => `<div class="sc-eq${e.gagnant === eq ? ' gagne' : ''}">
+      <div class="sc-nom">${e.gagnant === eq ? '🏆 ' : ''}${nom}</div>${jt ? `<div class="sc-joueurs">${jt}</div>` : ''}
+      <div class="sc-pts">${pts}</div>${boutons(eq)}</div>`;
+  const wa = `🔴 Score PVK — ${(m.eqA || {}).nom || 'Équipe 1'} ${e.A} – ${e.B} ${(m.eqB || {}).nom || 'Équipe 2'}` + (e.fini ? ` 🏆 Victoire de ${e.gagnant === 'A' ? (m.eqA || {}).nom : (m.eqB || {}).nom} !` : ` (mène ${e.menes.length})`);
+  return `<div class="card match-card${e.fini ? ' fini' : ''}">
+    <div class="sc-statut">${e.fini ? '✅ Partie terminée' : `<span class="live-dot"></span> En cours · mène ${e.menes.length + 1} · en ${e.but} points`}</div>
+    <div class="sc-duel">${cote('A', nA, e.A, joueursTxt(m.eqA))}<div class="sc-vs">–</div>${cote('B', nB, e.B, joueursTxt(m.eqB))}</div>
+    <div class="sc-actions">
+      ${e.menes.length ? `<button class="btn-outline" onclick="annulerMene('${m.id}')">↩️ Annuler la dernière mène</button>` : ''}
+      <a class="btn-primary" href="https://wa.me/?text=${encodeURIComponent(wa)}" target="_blank" rel="noopener">📤 WhatsApp</a>
+      ${currentUser && currentUser.role === 'admin' ? `<button class="admin-btn del" onclick="supprimerPartie('${m.id}')">🗑️</button>` : ''}
+    </div></div>`;
+}
+
+function renderScore() {
+  const ok = peutScorer();
+  document.getElementById('scoreAccessMsg').classList.toggle('hidden', ok);
+  document.getElementById('scoreContenu').classList.toggle('hidden', !ok);
+  if (!ok) return;
+  const c = document.getElementById('scoreListe');
+  if (!matchsCache) c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  chargerMatchs(function(l) {
+    if (l === null) { c.innerHTML = '<p class="vide">Score indisponible (connexion ?).</p>'; return; }
+    const sig = JSON.stringify(l); if (sig === matchsSig && c.innerHTML.indexOf('⏳') < 0) return; matchsSig = sig;
+    c.innerHTML = l.length ? l.slice().reverse().map(carteMatch).join('') : '<p class="vide">Aucune partie ce soir pour le moment. Lancez-en une ci-dessous 👇</p>';
+  });
+  demarrerScoreTimer();
+}
+// Mise à jour toutes les 5 s quand la page Score ou l'accueil est affiché
+function demarrerScoreTimer() {
+  if (scoreTimer) return;
+  scoreTimer = setInterval(function() {
+    if (document.hidden) return;
+    if (currentPage === 'score') renderScore(); else if (currentPage === 'accueil') renderLive();
+  }, 5000);
+}
+
+function renderLive() {
+  const carte = document.getElementById('liveCard');
+  if (!carte) return;
+  if (!peutScorer()) { carte.classList.add('hidden'); return; }
+  chargerMatchs(function(l) {
+    const enCours = (l || []).filter(m => !etatMatch(m).fini), finis = (l || []).filter(m => etatMatch(m).fini);
+    const aff = enCours.length ? enCours : finis.slice(-1);
+    carte.classList.toggle('hidden', !aff.length);
+    document.getElementById('liveContenu').innerHTML = aff.map(m => { const e = etatMatch(m);
+      return `<div class="live-ligne"><span>${escapeHtml((m.eqA || {}).nom || '')}</span><b>${e.A} – ${e.B}</b><span>${escapeHtml((m.eqB || {}).nom || '')}</span></div>`; }).join('')
+      + '<div class="live-voir">Voir le score →</div>';
+  });
+  demarrerScoreTimer();
+}
+
+function creerPartie(eqA, eqB, but) {
+  return db.ref(cheminMatchs()).push({ eqA: eqA, eqB: eqB, but: but === 15 ? 15 : 13, ts: Date.now(),
+    par: ((currentUser.prenom || '') + ' ' + (currentUser.nom || '')).trim().slice(0, 79) || 'Adhérent' });
+}
+function nouvellePartie() {
+  if (!db || !peutScorer()) return;
+  const a = document.getElementById('scNomA').value.trim().slice(0, 60) || 'Équipe 1';
+  const b = document.getElementById('scNomB').value.trim().slice(0, 60) || 'Équipe 2';
+  creerPartie({ nom: a }, { nom: b }, +document.getElementById('scBut').value).then(function() {
+    document.getElementById('scNomA').value = ''; document.getElementById('scNomB').value = '';
+    showToast('🔴 Partie lancée !'); matchsSig = ''; renderScore();
+  }).catch(() => showToast('⚠️ Refusé par Firebase : les règles doivent être mises à jour (matchs)'));
+}
+function scoreDepuisTirage() {
+  if (!tirEquipes || tirEquipes.length < 2 || !db) return;
+  const eq = (e, i) => ({ nom: 'Équipe ' + (String(e.tireur.nom || '').split(' ')[0] || (i + 1)), joueurs: [e.tireur].concat(e.demis, e.pointeurs).map(j => String(j.nom || '').slice(0, 60)) });
+  const parties = [];
+  const taille = e => 1 + e.demis.length + e.pointeurs.length;   // plus de 3 joueurs par équipe → partie en 15 points
+  for (let i = 0; i + 1 < tirEquipes.length; i += 2) parties.push(creerPartie(eq(tirEquipes[i], i), eq(tirEquipes[i + 1], i + 1), Math.max(taille(tirEquipes[i]), taille(tirEquipes[i + 1])) > 3 ? 15 : 13));
+  Promise.all(parties).then(function() { showToast('🔴 ' + parties.length + ' partie' + (parties.length > 1 ? 's lancées' : ' lancée') + ' !'); matchsSig = ''; showPage('score'); })
+    .catch(() => showToast('⚠️ Refusé par Firebase : les règles doivent être mises à jour (matchs)'));
+}
+function marquerPoints(id, eq, pts) {
+  db.ref(cheminMatchs() + '/' + id + '/menes').push({ eq: eq, pts: pts, ts: Date.now() }).then(function() {
+    matchsSig = ''; renderScore();
+    const m = (matchsCache || []).find(x => x.id === id);
+    if (m) { const e = etatMatch(m); const tot = (eq === 'A' ? e.A : e.B) + pts; if (tot >= e.but) celebrer(document.querySelector('.match-card')); }
+  }).catch(() => showToast('⚠️ Enregistrement impossible'));
+}
+function annulerMene(id) {
+  const m = (matchsCache || []).find(x => x.id === id); if (!m) return;
+  const e = etatMatch(m), der = e.menes[e.menes.length - 1]; if (!der) return;
+  if (!confirm('Annuler la dernière mène (+' + der.pts + ') ?')) return;
+  db.ref(cheminMatchs() + '/' + id + '/menes/' + der.id).remove().then(function() { matchsSig = ''; renderScore(); })
+    .catch(() => showToast('⚠️ Annulation impossible'));
+}
+function supprimerPartie(id) {
+  if (!confirm('Supprimer cette partie ?')) return;
+  db.ref(cheminMatchs() + '/' + id).remove().then(function() { matchsSig = ''; renderScore(); }).catch(() => showToast('⚠️ Suppression impossible'));
+}
+// L'admin fait le ménage : on efface les parties de plus de 30 jours
+function nettoyerMatchs() {
+  if (!db || !currentUser || currentUser.role !== 'admin') return;
+  const lim = new Date(); lim.setDate(lim.getDate() - 30); const l = dateISO(lim);
+  db.ref('matchs').once('value').then(function(s) {
+    const maj = {}; s.forEach(function(c) { if (c.key < l) maj['matchs/' + c.key] = null; });
+    if (Object.keys(maj).length) db.ref().update(maj).catch(function(){});
+  }).catch(function(){});
+}
+
+/* ===================== COURS DE L'OR (XAUS, gratuit, sans clé) ===================== */
+let orCache = null, orCacheTs = 0;
+function chargerOr(callback) {
+  if (orCache && Date.now() - orCacheTs < 10 * 60000) { callback(orCache); return; }   // 10 min
+  const url = c => 'https://xaus.com/api/v1/spot?currency=' + c + '&unit=gram&compact=1';
+  const prix = j => (j && j.xau && +j.xau.price) || (j && j.per_gram_usd && j.fx_rate ? j.per_gram_usd * j.fx_rate : 0);
+  Promise.all(['EUR', 'INR'].map(c => fetch(url(c)).then(r => { if (!r.ok) throw new Error('or ' + r.status); return r.json(); })))
+    .then(function(r) {
+      const eur = prix(r[0]), inr = prix(r[1]);
+      if (!eur || !inr) throw new Error('vide');
+      orCache = { eur: eur, inr: inr, maj: r[0].updated_at || '' }; orCacheTs = Date.now(); callback(orCache);
+    })
+    .catch(() => callback(null));
+}
+function renderOr() {
+  const c = document.getElementById('orContenu');
+  if (!c) return;
+  c.innerHTML = '<p class="vide">⏳ Chargement du cours…</p>';
+  chargerOr(function(o) {
+    if (!o) { c.innerHTML = '<p class="vide">Cours indisponible pour le moment.</p>'; return; }
+    const k22 = 22 / 24;
+    c.innerHTML = `<table class="or-table">
+        <tr><th></th><th>🇫🇷 France</th><th>🇮🇳 Inde</th></tr>
+        <tr><td><b>24 carats</b><br><small>le gramme</small></td><td>${fmtNombre(o.eur, 2)} €</td><td>${fmtNombre(o.inr, 0)} ₹</td></tr>
+        <tr><td><b>22 carats</b><br><small>le gramme</small></td><td>${fmtNombre(o.eur * k22, 2)} €</td><td>${fmtNombre(o.inr * k22, 0)} ₹</td></tr>
+        <tr class="or-pavan"><td><b>1 சவரன்</b><br><small>8 g · 22 carats</small></td><td>${fmtNombre(o.eur * k22 * 8, 0)} €</td><td>${fmtNombre(o.inr * k22 * 8, 0)} ₹</td></tr>
+      </table>
+      <p class="pf-note">Prix de l'or pur sur le marché mondial. En bijouterie, il faut ajouter la façon ; en Inde, les droits de douane et la GST de 3 % rendent le prix un peu plus élevé.</p>`;
+    if (o.maj) { const d = new Date(o.maj); if (!isNaN(d)) document.getElementById('orSource').textContent = 'Cours international (spot) du ' + d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' · XAUS'; }
   });
 }
 

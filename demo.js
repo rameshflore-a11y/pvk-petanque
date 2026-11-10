@@ -15,7 +15,7 @@
   var SELF=['id','email','prenom','nom','tel','naissance','adresse','fonction','inscritLe'];
   function actif(){ return cur && store.users && store.users[cur.uid] && store.users[cur.uid].abonnement && store.users[cur.uid].abonnement.statut==='actif'; }
   function canRead(p){ var s=p.split('/').filter(Boolean); if(!cur) return false;
-    if(s[0]==='annuaire'||s[0]==='presences') return isAdmin()||actif();
+    if(s[0]==='annuaire'||s[0]==='presences'||s[0]==='matchs') return isAdmin()||actif();
     if(['news','agenda','films','config','festivals'].includes(s[0])) return true;
     if(s[0]==='admins') return s.length===1? isAdmin() : (s[1]===cur.uid||isAdmin());
     if(s[0]==='users') return s.length===1? isAdmin() : (s[1]===cur.uid||isAdmin());
@@ -23,6 +23,7 @@
   function canWrite(p){ var s=p.split('/').filter(Boolean); if(!cur) return false;
     if(['news','agenda','films','config','festivals'].includes(s[0])) return isAdmin();
     if(s[0]==='annuaire' && s.length>=2){ if(isAdmin()) return true; return s[1]===cur.uid && s.length===3 && ['prenom','nom','tel','fonction'].includes(s[2]); }
+    if(s[0]==='matchs') return s.length>=2 && (isAdmin()||actif());
     if(s[0]==='presences'){ if(isAdmin()) return true; return s.length===3 && s[2]===cur.uid && actif(); }
     if(s.length===0) return isAdmin();
     if(s[0]==='users' && s.length>=2){ if(isAdmin()) return true; return s[1]===cur.uid && s.length===3 && SELF.includes(s[2]); }
@@ -73,6 +74,8 @@
   store.films = { f1: { titre: 'Film tamoul (exemple)', langue: 'ta', resume: 'Exemple de fiche : affiche, résumé, cinémas et lien pour réserver.', cinemas: ['Cinéma près de chez vous'], ts: 2 },
                   f2: { titre: 'Film hindi (exemple)', langue: 'hi', resume: 'Exemple de fiche : affiche, résumé, cinémas et lien pour réserver.', cinemas: ['Cinéma près de chez vous'], ts: 1 } };
   store.config = {};
+  store.matchs = {}; store.matchs[iso] = { d1: { eqA: { nom: 'Équipe 1', joueurs: ['Bala Murugan', 'Vijay Kannan'] }, eqB: { nom: 'Équipe 2', joueurs: ['Rajan Ramassamy', 'Karthik Raman'] }, ts: 1, par: 'Rajan Ramassamy',
+    menes: { a: { eq: 'A', pts: 2, ts: 1 }, b: { eq: 'B', pts: 1, ts: 2 }, c: { eq: 'A', pts: 3, ts: 3 }, d: { eq: 'B', pts: 4, ts: 4 } } } };
   cur = { uid: uid, email: 'demo@demo.pvk' };   // connecté automatiquement
 
   window.quitterDemo = function(){ try { sessionStorage.removeItem('pvk_demo'); } catch (e) {} location.href = location.pathname; };

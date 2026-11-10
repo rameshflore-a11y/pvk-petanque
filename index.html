@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=49"/>
+  <link rel="stylesheet" href="style.css?v=52"/>
 </head>
 <body>
 
@@ -103,6 +103,7 @@
       <li onclick="nav('actualites')"><span class="menu-icon">📰</span> Actualités</li>
       <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
       <li onclick="nav('tirage')"><span class="menu-icon">🎲</span> Tirage des équipes</li>
+      <li onclick="nav('score')"><span class="menu-icon">🔴</span> Score en direct</li>
       <li onclick="nav('films')"><span class="menu-icon">🎬</span> Films</li>
       <li onclick="nav('promos')"><span class="menu-icon">🛒</span> Promos</li>
       <li onclick="nav('carburants')"><span class="menu-icon">⛽</span> Carburants</li>
@@ -165,6 +166,12 @@
           <div id="presenceContenu"></div>
         </div>
 
+        <!-- Parties en direct -->
+        <div class="card live-card hidden" id="liveCard" onclick="showPage('score')">
+          <div class="section-title mb-8"><span class="live-dot"></span> En direct au terrain</div>
+          <div id="liveContenu"></div>
+        </div>
+
         <!-- Kural du jour -->
         <div class="card kural-card">
           <div class="section-title mb-8">📜 இன்றைய குறள் · Le Kural du jour</div>
@@ -185,6 +192,13 @@
           <p class="meteo-credit" id="changeSource">Taux de référence BCE · Frankfurter</p>
         </div>
 
+        <!-- Cours de l'or -->
+        <div class="card meteo-card">
+          <div class="section-title mb-8">🪙 Cours de l'or · தங்கம் விலை</div>
+          <div id="orContenu"></div>
+          <p class="meteo-credit" id="orSource">Cours international (spot) · XAUS</p>
+        </div>
+
         <!-- Statut abonnement -->
         <div class="status-card" id="statusCard">
           <div class="status-icon" id="statusIcon">✅</div>
@@ -203,7 +217,7 @@
         <!-- Accès rapide -->
         <div class="section-title" style="margin-top:16px">Accès rapide</div>
         <div class="quick-grid-3">
-          <div class="quick-card" onclick="showPage('club')"><span class="quick-icon">🤝</span><span>Le Club</span></div>
+          <div class="quick-card" onclick="showPage('score')"><span class="quick-icon">🔴</span><span>Score live</span></div>
           <div class="quick-card" onclick="showPage('agenda')"><span class="quick-icon">📅</span><span>Agenda</span></div>
           <div class="quick-card" onclick="showPage('actualites')"><span class="quick-icon">📰</span><span>Actualités</span></div>
           <div class="quick-card" onclick="showPage('promos')"><span class="quick-icon">🛒</span><span>Promos</span></div>
@@ -580,6 +594,29 @@
       </div>
     </div>
 
+    <!-- SCORE EN DIRECT -->
+    <div id="page-score" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🔴 Score en direct</h2>
+        <p class="page-subtitle">Les parties de ce soir, en temps réel · 13 points (15 points au-delà de 3 joueurs par équipe)</p>
+        <div id="scoreAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents.</div>
+        <div id="scoreContenu">
+          <div id="scoreListe"></div>
+          <div class="card mt-16">
+            <div class="section-title mb-8">➕ Nouvelle partie</div>
+            <input type="text" id="scNomA" class="fin-search" maxlength="60" placeholder="Équipe 1 (ex : Bala &amp; Vijay)"/>
+            <input type="text" id="scNomB" class="fin-search" maxlength="60" placeholder="Équipe 2 (ex : Kumar &amp; Anand)"/>
+            <select id="scBut" class="fin-search">
+              <option value="13">Partie en 13 points (jusqu'à 3 joueurs par équipe)</option>
+              <option value="15">Partie en 15 points (plus de 3 joueurs par équipe)</option>
+            </select>
+            <button class="btn-primary btn-full" onclick="nouvellePartie()">🔴 Lancer la partie</button>
+            <p class="pf-note">Astuce : après un tirage, le bouton « 🔴 Score en direct » crée les parties avec les équipes tirées.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- FESTIVALS -->
     <div id="page-festivals" class="page">
       <div class="page-inner">
@@ -726,7 +763,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=49"></script>
+<script src="app.js?v=52"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
