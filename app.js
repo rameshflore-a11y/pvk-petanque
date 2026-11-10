@@ -565,6 +565,7 @@ function renderAccueil() {
   document.getElementById('statusVal').textContent  = actif ? 'Actif' : 'Inactif';
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
   renderPresence();
+  renderKural();
   renderMeteo();
   renderChange();
   nettoyerPresences();
@@ -1482,6 +1483,29 @@ function ouvrirVols() {
 }
 
 function renderPromos() { renderCarburants(); initVols(); }
+
+/* ===================== KURAL DU JOUR (texte de Thiruvalluvar, explication tamoule de Mu. Varadarasanar) ===================== */
+let kuralsListe = null;
+function renderKural() {
+  const c = document.getElementById('kuralContenu');
+  if (!c) return;
+  const afficher = () => {
+    if (!kuralsListe || !kuralsListe.length) { c.innerHTML = '<p class="vide">Kural indisponible pour le moment.</p>'; return; }
+    const auj = new Date(); auj.setHours(12, 0, 0, 0);
+    const jour = Math.floor((auj - new Date(2026, 10, 10, 12)) / 86400000);
+    const k = kuralsListe[((jour % kuralsListe.length) + kuralsListe.length) % kuralsListe.length];
+    c.innerHTML = `
+      <div class="kural-meta">குறள் ${k.n} · ${escapeHtml(k.adh)} <span>(${escapeHtml(k.adhFr)})</span></div>
+      <div class="kural-texte">${escapeHtml(k.l1)}<br>${escapeHtml(k.l2)}</div>
+      <div class="kural-expl"><span class="kural-lang">தமிழ்</span>${escapeHtml(k.mv)}</div>
+      <div class="kural-expl"><span class="kural-lang">FR</span>${escapeHtml(k.fr)}</div>
+      <div class="kural-src">Thiruvalluvar · explication tamoule : Mu. Varadarasanar</div>`;
+  };
+  if (kuralsListe) { afficher(); return; }
+  fetch('kurals.json?v=1').then(r => { if (!r.ok) throw new Error('kural ' + r.status); return r.json(); })
+    .then(l => { kuralsListe = l; afficher(); })
+    .catch(() => afficher());
+}
 
 /* ===================== « JE VIENS CE SOIR » ===================== */
 // presences/<AAAA-MM-JJ>/<uid> = { nom, ts } — chacun ne peut écrire que sa propre ligne (règles Firebase)
