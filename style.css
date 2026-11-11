@@ -1068,3 +1068,6 @@ body.fete-noel .fete-deco span { animation-name:neige; top:-30px; bottom:auto; }
 .or-table small { color:var(--text-muted); font-weight:500; }
 .or-pavan td { background:#FFF8E7; }
 @media (prefers-color-scheme: dark) { .or-pavan td { background:#2A2418; } }
+
+/* ===== Annuaire : numéro masqué ===== */
+.mdc-contact-row .mdc-contact-val.masque { color:var(--text-muted); font-style:italic; font-weight:600; }

@@ -603,7 +603,7 @@ function renderClub() {
         <div class="membre-info">
           <div class="membre-name">${escapeHtml(u.prenom)} ${escapeHtml(u.nom)}</div>
           <span class="membre-fonction bureau">${escapeHtml(u.fonction)}</span>
-          ${u.tel?`<div class="membre-row"><span>📞</span><a href="tel:${escapeHtml(u.tel)}" class="link-red">${escapeHtml(u.tel)}</a></div>`:''}
+          ${u.tel?`<div class="membre-row"><span>📞</span><a href="tel:${escapeHtml(u.tel)}" class="link-red">Appeler</a></div>`:''}
         </div>
       </div>`).join('');
     carte.classList.toggle('hidden', !bureau.length);
@@ -2061,7 +2061,7 @@ function filterMembres() {
   const q = (document.getElementById('membreSearch')?.value||'').toLowerCase();
   let users = annuaireCache.slice();
   if (membreFilter === 'bureau') users = users.filter(u => BUREAU_FONCTIONS.includes(u.fonction||''));
-  if (q) users = users.filter(u => `${u.prenom} ${u.nom} ${u.fonction||''} ${u.tel||''}`.toLowerCase().includes(q));
+  if (q) users = users.filter(u => `${u.prenom} ${u.nom} ${u.fonction||''}`.toLowerCase().includes(q));
   users.sort((a,b) => {
     const ai = BUREAU_FONCTIONS.indexOf(a.fonction||''), bi = BUREAU_FONCTIONS.indexOf(b.fonction||'');
     if (ai !== -1 && bi === -1) return -1;
@@ -2087,7 +2087,7 @@ function buildMembreCard(u) {
     ${tel ? `<div class="mdc-contacts">
       <a href="tel:${tel}" class="mdc-contact-row">
         <div class="mdc-contact-icon tel">📞</div>
-        <div class="mdc-contact-info"><div class="mdc-contact-label">Portable</div><div class="mdc-contact-val">${tel}</div></div>
+        <div class="mdc-contact-info"><div class="mdc-contact-label">Portable</div><div class="mdc-contact-val masque">Numéro masqué</div></div>
         <div class="mdc-contact-action">Appeler</div>
       </a></div>` : ''}
   </div>`;
