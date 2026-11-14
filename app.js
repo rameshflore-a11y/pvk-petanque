@@ -2247,6 +2247,10 @@ function totauxCaisse() {
 function afficherHorsAppli() {
   const t = totauxCaisse();
   const st = document.getElementById('statCA'); if (st) st.textContent = fmtEuro(t.total) + '€';
+  const h = nbHorsAppliSansCompte();
+  const sT = document.getElementById('statTotal'), sA = document.getElementById('statActifs');
+  if (sT) sT.textContent = caisseUsers.length + h;
+  if (sA) sA.textContent = caisseUsers.filter(u => isAbonnementActif(u)).length + h;
   const r = document.getElementById('horsAppliResume');
   if (r) r.innerHTML = `Appli : <b>${fmtEuro(t.appli)} €</b> · Hors appli : <b>${fmtEuro(t.hors)} €</b> · <span class="ha-total">Total : ${fmtEuro(t.total)} €</span>`;
   const l = document.getElementById('horsAppliListe');
