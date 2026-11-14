@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=53"/>
+  <link rel="stylesheet" href="style.css?v=55"/>
 </head>
 <body>
 
@@ -82,7 +82,7 @@
       <span class="topbar-pvk">PVK</span>
       <span class="topbar-name">Vetri Kazhagam</span>
     </div>
-    <button class="topbar-notif" onclick="showPage('actualites')" title="Actualités">🔔</button>
+    <button class="topbar-notif" onclick="showPage('actualites')" title="Actualités">🔔<span class="badge hidden" id="badgeCloche"></span></button>
   </header>
 
   <!-- SIDEBAR -->
@@ -215,17 +215,14 @@
         <button class="btn-outline btn-full" onclick="showPage('actualites')">Voir toutes les actualités →</button>
 
         <!-- Accès rapide -->
-        <div class="section-title" style="margin-top:16px">Accès rapide</div>
-        <div class="quick-grid-3">
-          <div class="quick-card" onclick="showPage('score')"><span class="quick-icon">🔴</span><span>Score live</span></div>
-          <div class="quick-card" onclick="showPage('agenda')"><span class="quick-icon">📅</span><span>Agenda</span></div>
-          <div class="quick-card" onclick="showPage('actualites')"><span class="quick-icon">📰</span><span>Actualités</span></div>
+        <div class="quick-grid-3 quick-barre" aria-label="Accès rapide">
+          <div class="quick-card" onclick="showPage('score')"><span class="quick-icon">🔴</span><span>Score</span></div>
           <div class="quick-card" onclick="showPage('promos')"><span class="quick-icon">🛒</span><span>Promos</span></div>
           <div class="quick-card" onclick="showPage('tirage')"><span class="quick-icon">🎲</span><span>Tirage</span></div>
           <div class="quick-card" onclick="showPage('films')"><span class="quick-icon">🎬</span><span>Films</span></div>
-          <div class="quick-card" onclick="showPage('carburants')"><span class="quick-icon">⛽</span><span>Carburants</span></div>
+          <div class="quick-card" onclick="showPage('carburants')"><span class="quick-icon">⛽</span><span>Essence</span></div>
           <div class="quick-card" onclick="showPage('voyage')"><span class="quick-icon">✈️</span><span>Voyage</span></div>
-          <div class="quick-card" onclick="showPage('rasi')"><span class="quick-icon">🔮</span><span>ராசி பலன்</span></div>
+          <div class="quick-card" onclick="showPage('rasi')"><span class="quick-icon">🔮</span><span>ராசி</span></div>
         </div>
       </div>
     </div>
@@ -728,10 +725,10 @@
       <span class="nav-icon">🏠</span><span class="nav-label">Accueil</span>
     </button>
     <button class="nav-btn" id="navAgenda" onclick="showPage('agenda')">
-      <span class="nav-icon">📅</span><span class="nav-label">Agenda</span>
+      <span class="nav-icon">📅<span class="badge hidden" id="badgeAgenda"></span></span><span class="nav-label">Agenda</span>
     </button>
     <button class="nav-btn" id="navActus" onclick="showPage('actualites')">
-      <span class="nav-icon">📰</span><span class="nav-label">Actus</span>
+      <span class="nav-icon">📰<span class="badge hidden" id="badgeActus"></span></span><span class="nav-label">Actus</span>
     </button>
     <button class="nav-btn" id="navMembres" onclick="showPage('membres')">
       <span class="nav-icon">👥</span><span class="nav-label">Membres</span>
@@ -763,7 +760,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=53"></script>
+<script src="app.js?v=55"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

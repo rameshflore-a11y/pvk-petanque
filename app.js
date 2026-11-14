@@ -569,6 +569,7 @@ function renderAccueil() {
   document.getElementById('statusExpiry').textContent = actif ? 'Adhésion sans date de fin' : 'En attente de validation par l\'administrateur';
   renderPresence();
   appliquerFete();
+  majBadges();
   renderLive();
   nettoyerMatchs();
   renderKural();
@@ -703,6 +704,7 @@ function buildNewsCard(n, apercu) {
   </div>`;
 }
 function renderActualites() {
+  marquerVu('news');
   const isAdmin = currentUser && currentUser.role === 'admin';
   document.getElementById('newsAdminForm').classList.toggle('hidden', !isAdmin);
   const c = document.getElementById('newsContainer');
@@ -753,6 +755,7 @@ function switchAgenda(mode) {
 }
 
 function renderAgenda() {
+  if (agendaMode === 'club') marquerVu('agenda');
   const isAdmin = currentUser && currentUser.role === 'admin';
   document.getElementById('agendaAdminForm').classList.toggle('hidden', !(isAdmin && agendaMode === 'club'));
   const c = document.getElementById('agendaContainer');
@@ -1852,6 +1855,33 @@ function renderOr() {
       <p class="pf-note">Prix de l'or pur sur le marché mondial. En bijouterie, il faut ajouter la façon ; en Inde, les droits de douane et la GST de 3 % rendent le prix un peu plus élevé.</p>`;
     if (o.maj) { const d = new Date(o.maj); if (!isNaN(d)) document.getElementById('orSource').textContent = 'Cours international (spot) du ' + d.toLocaleDateString('fr-FR') + ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' · XAUS'; }
   });
+}
+
+/* ===================== PASTILLES « NOUVEAU » (comme WhatsApp) ===================== */
+// Chaque membre a sa date de dernière visite (sur son téléphone) pour les Actus et l'Agenda du club.
+function lireVu(cle) { try { const v = parseInt(localStorage.getItem('pvk_vu_' + cle), 10); return isNaN(v) ? null : v; } catch (e) { return null; } }
+function marquerVu(cle) { try { localStorage.setItem('pvk_vu_' + cle, String(Date.now())); } catch (e) {} majBadges(); }
+function poserBadge(id, n) {
+  const el = document.getElementById(id); if (!el) return;
+  el.textContent = n > 9 ? '9+' : String(n); el.classList.toggle('hidden', !n);
+}
+let badgeTimer = null;
+function majBadges() {
+  if (!db || !currentUser) return;
+  ['news', 'agenda'].forEach(cle => { if (lireVu(cle) === null) { try { localStorage.setItem('pvk_vu_' + cle, String(Date.now())); } catch (e) {} } });
+  Promise.all([fbListP('news'), fbListP('agenda')]).then(function(r) {
+    const nouveaux = (l, cle) => (l || []).filter(x => (x.ts || 0) > (lireVu(cle) || Date.now())).length;
+    const nN = currentPage === 'actualites' ? 0 : nouveaux(r[0], 'news');
+    const nA = currentPage === 'agenda' ? 0 : nouveaux(r[1], 'agenda');
+    poserBadge('badgeActus', nN); poserBadge('badgeAgenda', nA); poserBadge('badgeCloche', nN + nA);
+    try {   // pastille sur l'icône de l'appli (téléphones qui le permettent)
+      if (navigator.setAppBadge) { if (nN + nA) navigator.setAppBadge(nN + nA).catch(function(){}); else navigator.clearAppBadge().catch(function(){}); }
+    } catch (e) {}
+  });
+  if (!badgeTimer) {
+    badgeTimer = setInterval(function() { if (!document.hidden) majBadges(); }, 60000);
+    document.addEventListener('visibilitychange', function() { if (!document.hidden) majBadges(); });
+  }
 }
 
 /* ===================== « JE VIENS CE SOIR » ===================== */
