@@ -1089,3 +1089,5 @@ body.fete-noel .fete-deco span { animation-name:neige; top:-30px; bottom:auto; }
 .badge { position:absolute; top:-4px; right:-10px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:#E11D48; color:#fff;
   font-size:.65rem; font-weight:800; line-height:18px; text-align:center; box-shadow:0 0 0 2px var(--card); font-style:normal; }
 .topbar-notif .badge { top:2px; right:0; box-shadow:0 0 0 2px #9B1530; }
+
+.carbu-lieu { font-weight:600; color:var(--text-muted); font-size:.85rem; }

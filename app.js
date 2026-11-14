@@ -1422,13 +1422,15 @@ const carbuCache = {};
 function chargerCarburant(f, callback) {
   const c = carbuCache[f];
   if (c && Date.now() - c.ts < 15 * 60000) { callback(c.liste); return; }
-  const base = 'select=' + encodeURIComponent(['adresse','ville','cp',f + '_prix',f + '_maj'].join(',')) + '&order_by=' + f + '_prix&limit=50';
-  // Cergy (95000, 95800) et Osny (95520)
-  const essais = [
+  const champs = ['adresse','ville','cp',f + '_prix',f + '_maj'];
+  const avecId = 'select=' + encodeURIComponent(['id'].concat(champs).join(',')) + '&order_by=' + f + '_prix&limit=50';
+  const sansId = 'select=' + encodeURIComponent(champs.join(',')) + '&order_by=' + f + '_prix&limit=50';
+  // Cergy (95000, 95800) et Osny (95520) ; on essaie d'abord avec l'identifiant de la station (pour retrouver son nom)
+  const essais = [avecId, sansId].flatMap(base => [
     base + '&where=' + encodeURIComponent('(cp="95000" or cp="95800" or cp="95520") and ' + f + '_prix is not null'),
     base + '&where=' + encodeURIComponent('code_departement="95" and ' + f + '_prix is not null'),
     base + '&refine=' + encodeURIComponent('code_departement:95')
-  ];
+  ]);
   const essai = i => {
     if (i >= essais.length) { callback(null); return; }
     fetch(CARBU_API + '?' + essais[i]).then(r => { if (!r.ok) throw new Error('carbu ' + r.status); return r.json(); })
@@ -1440,7 +1442,7 @@ function chargerCarburant(f, callback) {
         const parNom = recents.filter(x => /cergy|osny/i.test(String(x.ville || '')));
         const liste = (parNom.length >= 3 ? parNom : recents)
           .sort((a, b) => (+a[f + '_prix']) - (+b[f + '_prix']))
-          .slice(0, 5).map(x => ({ adresse: x.adresse || '', ville: x.ville || '', cp: x.cp || '', prix: +x[f + '_prix'], maj: x[f + '_maj'] || '' }));
+          .slice(0, 5).map(x => ({ id: x.id != null ? String(x.id) : '', adresse: x.adresse || '', ville: x.ville || '', cp: x.cp || '', prix: +x[f + '_prix'], maj: x[f + '_maj'] || '' }));
         if (!j.results) throw new Error('vide');
         carbuCache[f] = { ts: Date.now(), liste: liste }; callback(liste);
       })
@@ -1448,6 +1450,26 @@ function chargerCarburant(f, callback) {
   };
   essai(0);
 }
+
+// Les données officielles ne contiennent pas le nom des stations : on le cherche dans OpenStreetMap,
+// où chaque station porte l'identifiant officiel (ref:FR:prix-carburants). Gardé 7 jours sur le téléphone.
+let nomsStations = null;
+function chargerNomsStations(callback) {
+  if (nomsStations) { callback(nomsStations); return; }
+  try { const c = JSON.parse(localStorage.getItem('pvk_noms_stations') || 'null'); if (c && Date.now() - c.ts < 7 * 86400000) { nomsStations = c.noms; callback(nomsStations); return; } } catch (e) {}
+  const q = '[out:json][timeout:20];nwr["amenity"="fuel"]["ref:FR:prix-carburants"](48.99,1.96,49.09,2.14);out tags;';
+  fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+    .then(r => { if (!r.ok) throw new Error('osm ' + r.status); return r.json(); })
+    .then(j => {
+      const noms = {};
+      (j.elements || []).forEach(e => { const t = e.tags || {}; const n = t.brand || t.name || t.operator; if (n) String(t['ref:FR:prix-carburants']).split(';').forEach(id => { noms[id.trim()] = n; }); });
+      nomsStations = noms;
+      try { localStorage.setItem('pvk_noms_stations', JSON.stringify({ ts: Date.now(), noms: noms })); } catch (e) {}
+      callback(noms);
+    })
+    .catch(() => callback({}));
+}
+function villeJolie(v) { v = String(v || '').toLowerCase(); return v.replace(/(^|[\s-])\S/g, c => c.toUpperCase()); }
 
 function choisirCarburant(f) { carbuChoix = f; renderCarburants(); }
 
@@ -1472,13 +1494,16 @@ function renderCarburants() {
       const q = encodeURIComponent((s.adresse + ' ' + s.cp + ' ' + s.ville).trim());
       return `<div class="carbu-ligne">
         <div class="carbu-rang">${i + 1}</div>
-        <div class="carbu-info"><div class="carbu-ville">${escapeHtml(s.ville)}</div>
+        <div class="carbu-info"><div class="carbu-ville"><span class="carbu-nom" data-id="${escapeHtml(s.id || '')}">⛽ Station</span> <span class="carbu-lieu">· ${escapeHtml(villeJolie(s.ville))}</span></div>
           <div class="carbu-adr">${escapeHtml(s.adresse)}</div>
           <div class="carbu-maj">${majDepuis(s.maj)}</div></div>
         <div class="carbu-droite"><div class="carbu-prix">${fmtNombre(s.prix, 3)} €</div>
           <a class="link-red carbu-iti" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">📍 Itinéraire</a></div>
       </div>`;
     }).join('');
+    chargerNomsStations(function(noms) {
+      c.querySelectorAll('.carbu-nom').forEach(el => { const n = noms[el.dataset.id]; if (n) el.textContent = '⛽ ' + n; });
+    });
   });
 }
 
