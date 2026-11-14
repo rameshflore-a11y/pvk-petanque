@@ -549,14 +549,17 @@ function renderAccueil() {
   if (isAdmin) {
     const users  = getUsers();
     const actifs = users.filter(u => isAbonnementActif(u));
-    document.getElementById('cntTotalA').textContent  = users.length;
-    document.getElementById('cntActifs').textContent  = actifs.length;
-    document.getElementById('cntExpires').textContent = users.length - actifs.length;
+    const majCompteurs = function(h) {
+      document.getElementById('cntTotalA').textContent  = users.length + h;
+      document.getElementById('cntActifs').textContent  = actifs.length + h;
+      document.getElementById('cntExpires').textContent = users.length - actifs.length;
+    };
+    majCompteurs(nbHorsAppli); lireNbHorsAppli().then(majCompteurs);
   } else {
     document.getElementById('cntTotal').textContent = '—';
     if (isAbonnementActif(currentUser)) {
-      fbList('annuaire', function(l) {
-        if (l) document.getElementById('cntTotal').textContent = l.filter(m => m.actif).length;
+      Promise.all([fbListP('annuaire'), lireNbHorsAppli()]).then(function(r) {
+        if (r[0]) document.getElementById('cntTotal').textContent = r[0].filter(m => m.actif).length + r[1];
       });
     }
   }
@@ -2126,12 +2129,12 @@ function renderMembres() {
   document.getElementById('membresContent').classList.toggle('hidden', !actif);
   if (!actif) return;
   document.getElementById('membresContainer').innerHTML = '<div class="membres-empty">⏳ Chargement…</div>';
-  fbList('annuaire', function(list) {
+  lireNbHorsAppli().then(function() { fbList('annuaire', function(list) {
     if (list === null) { document.getElementById('membresContainer').innerHTML = '<div class="membres-empty">Annuaire indisponible (connexion ?).</div>'; return; }
     annuaireCache = list.filter(u => u.actif);
     renderMembreStats();
     filterMembres();
-  });
+  }); });
 }
 
 function renderMembreStats() {
@@ -2140,7 +2143,7 @@ function renderMembreStats() {
   document.getElementById('filterBureau')?.classList.toggle('hidden', !bureau);
   if (!bureau && membreFilter === 'bureau') membreFilter = 'tous';
   document.getElementById('membreStats').innerHTML = `
-    <div class="mstat actif"><span class="mstat-val">${annuaireCache.length}</span><span class="mstat-lbl">Adhérents</span></div>
+    <div class="mstat actif"><span class="mstat-val">${annuaireCache.length + nbHorsAppli}</span><span class="mstat-lbl">Adhérents</span></div>
     ${bureau ? `<div class="mstat bureau"><span class="mstat-val">${bureau}</span><span class="mstat-lbl">Bureau</span></div>` : ''}
   `;
 }
@@ -2239,7 +2242,7 @@ function totauxCaisse() {
   const appli = appliPayeurs.reduce((t, u) => t + paiementsResume(u.paiements).montant, 0);
   const hors = horsAppli.reduce((t, h) => t + (+h.montant || 0), 0);
   const nomsHors = new Set(horsAppli.map(h => String(h.nom || '').trim().toLowerCase()));
-  return { appli: appli, hors: hors, total: Math.round((appli + hors) * 100) / 100, nb: appliPayeurs.length + nomsHors.size };
+  return { appli: appli, hors: hors, total: Math.round((appli + hors) * 100) / 100, nb: appliPayeurs.length + nbHorsAppliSansCompte() };
 }
 function afficherHorsAppli() {
   const t = totauxCaisse();
@@ -2254,9 +2257,23 @@ function afficherHorsAppli() {
     : '<p class="vide">Aucune cotisation hors appli pour le moment.</p>';
   publierCaisse(t);
 }
+let nbHorsAppli = 0;
+function nbHorsAppliSansCompte() {
+  const norm = x => String(x || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const connus = new Set();
+  caisseUsers.forEach(u => { [u.prenom + ' ' + u.nom, u.nom + ' ' + u.prenom].forEach(n => connus.add(norm(n))); });
+  const noms = new Set(horsAppli.map(h => norm(h.nom)).filter(n => n && !connus.has(n)));
+  return noms.size;
+}
+// Nombre publié par l'admin (lisible par tous les membres)
+function lireNbHorsAppli() {
+  if (!db) return Promise.resolve(0);
+  return db.ref('config/caisse/horsAppliNb').once('value').then(s => { nbHorsAppli = +s.val() || 0; return nbHorsAppli; }).catch(() => 0);
+}
 function publierCaisse(t) {
   if (!db || !currentUser || currentUser.role !== 'admin') return;
-  db.ref('config/caisse').update({ encaisse: t.total, nb: t.nb, maj: Date.now() }).catch(function(){});
+  db.ref('config/caisse').update({ encaisse: t.total, nb: t.nb, horsAppliNb: nbHorsAppliSansCompte(), maj: Date.now() }).catch(function(){});
+  nbHorsAppli = nbHorsAppliSansCompte();
 }
 function adminAjouterHorsAppli() {
   if (!db || !currentUser || currentUser.role !== 'admin') return;
