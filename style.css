@@ -1091,3 +1091,6 @@ body.fete-noel .fete-deco span { animation-name:neige; top:-30px; bottom:auto; }
 .topbar-notif .badge { top:2px; right:0; box-shadow:0 0 0 2px #9B1530; }
 
 .carbu-lieu { font-weight:600; color:var(--text-muted); font-size:.85rem; }
+
+/* Anniversaires des membres */
+.cal-type.anniv { background: #FCE7F3; color: #9D174D; }

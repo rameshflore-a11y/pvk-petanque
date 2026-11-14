@@ -754,6 +754,30 @@ function switchAgenda(mode) {
   renderAgenda();
 }
 
+// Anniversaires : on ne garde que le jour et le mois (MM-JJ), jamais l'année ni l'âge
+function jourAnniv(naissance) {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(String(naissance || ''));
+  return m ? m[1] + '-' + m[2] : '';
+}
+function anniversairesAVenir(annuaire) {
+  const auj = new Date(); auj.setHours(0,0,0,0);
+  const evs = [];
+  (annuaire || []).filter(u => u.actif && /^\d{2}-\d{2}$/.test(u.anniv || '')).forEach(u => {
+    const mo = +u.anniv.slice(0,2) - 1, jo = +u.anniv.slice(3,5);
+    let an = auj.getFullYear();
+    let dt = new Date(an, mo, jo);
+    if (dt < auj) { an++; dt = new Date(an, mo, jo); }
+    if (dt.getMonth() !== mo) dt = new Date(an, mo, 28);   // 29 février les années non bissextiles
+    if (dt - auj > 31 * 864e5) return;   // seulement le mois à venir, pour ne pas encombrer l'agenda
+    const nom = (u.prenom || '') + (u.nom ? ' ' + u.nom.charAt(0).toUpperCase() + '.' : '');
+    const cAuj = dt.getTime() === auj.getTime();
+    evs.push({ id: 'anniv-' + u.id, day: dt.getDate(), month: MOIS_LONGS[dt.getMonth()], year: dt.getFullYear(),
+               name: '🎂 Anniversaire ' + (/^[aeiouyéèêàâîôûh]/i.test(nom.trim()) ? "d'" : 'de ') + nom.trim(), detail: cAuj ? "C'est aujourd'hui ! Souhaitez-lui un bon anniversaire 🎉" : 'Pensez à lui souhaiter !',
+               type: 'anniv', anniv: true });
+  });
+  return evs;
+}
+
 function renderAgenda() {
   if (agendaMode === 'club') marquerVu('agenda');
   const isAdmin = currentUser && currentUser.role === 'admin';
@@ -764,19 +788,20 @@ function renderAgenda() {
     return;
   }
   c.innerHTML = '<p class="vide">⏳ Chargement…</p>';
-  fbList('agenda', function(list) {
+  Promise.all([fbListP('agenda'), fbListP('annuaire')]).then(function(r) {
+    const list = r[0];
     if (list === null) { c.innerHTML = '<p class="vide">Agenda indisponible (connexion ?).</p>'; return; }
     const evs = list.map(e => {
       const p = (e.date || '').split('-');
       return { id: e.id, day: +p[2], month: MOIS_LONGS[+p[1]-1], year: +p[0],
                name: e.name || '', detail: e.detail || '', type: e.type || 'special' };
-    }).filter(e => e.month);
+    }).filter(e => e.month).concat(anniversairesAVenir(r[1]));
     afficherAgenda(aVenir(evs), isAdmin);
   });
 }
 
 function afficherAgenda(data, avecSuppression) {
-  const typeLabel = { heure:'Changement d\'heure', fete:'Fête', tournoi:'Tournoi', special:'Événement', ferie:'Jour Férié', vacances:'Vacances 🏫', admin:'Démarche', impot:'Fiscal', election:'Élection', entrainement:'Entraînement', reunion:'Réunion' };
+  const typeLabel = { heure:'Changement d\'heure', fete:'Fête', tournoi:'Tournoi', special:'Événement', ferie:'Jour Férié', vacances:'Vacances 🏫', admin:'Démarche', impot:'Fiscal', election:'Élection', entrainement:'Entraînement', reunion:'Réunion', anniv:'Anniversaire' };
   let lastMonth = '';
   document.getElementById('agendaContainer').innerHTML = data.length ? data.map(ev => {
     let h = '';
@@ -785,7 +810,7 @@ function afficherAgenda(data, avecSuppression) {
     return `${h}<div class="cal-event">
       <div class="cal-date"><div class="cal-day">${ev.day}</div><div class="cal-mo">${ev.month.substring(0,3)}</div></div>
       <div class="cal-info"><div class="cal-name">${escapeHtml(ev.name)}</div><div class="cal-detail">${escapeHtml(ev.detail)}</div>
-        ${avecSuppression ? `<button class="admin-btn del mt-8" onclick="adminSupprimerEvenement('${ev.id}')">🗑️ Supprimer</button>` : ''}</div>
+        ${avecSuppression && !ev.anniv ? `<button class="admin-btn del mt-8" onclick="adminSupprimerEvenement('${ev.id}')">🗑️ Supprimer</button>` : ''}</div>
       <span class="cal-type ${ev.type}">${typeLabel[ev.type]||ev.type}</span>
     </div>`;
   }).join('') : '<p class="vide">Aucun événement à venir.</p>';
@@ -2190,6 +2215,7 @@ function synchroniserAnnuaire(users) {
     Object.keys(f).forEach(function(k){ maj['annuaire/' + u.id + '/' + k] = f[k]; });
     maj['annuaire/' + u.id + '/actif'] = isAbonnementActif(u);
     if (u.inscritLe) maj['annuaire/' + u.id + '/inscritLe'] = u.inscritLe;   // pour l'actualité « Bienvenue »
+    var an = jourAnniv(u.naissance); if (an) maj['annuaire/' + u.id + '/anniv'] = an;   // MM-JJ, sans l'année
   });
   if (Object.keys(maj).length) db.ref().update(maj).catch(function(e){ console.warn('annuaire:', e.message); });
 }
@@ -2280,7 +2306,7 @@ function adminValidate(id){
   saveUsers(users);
   fbSyncUser(users[idx]); // Sync Firebase
   if (currentUser && currentUser.id === id) { currentUser.abonnement = users[idx].abonnement; saveCurrentUser(currentUser); updateSidebar(); }
-  if (db) db.ref('annuaire/' + id).update(Object.assign(ficheAnnuaire(users[idx]), { actif: true }, users[idx].inscritLe ? { inscritLe: users[idx].inscritLe } : {})).catch(function(){});
+  if (db) db.ref('annuaire/' + id).update(Object.assign(ficheAnnuaire(users[idx]), { actif: true }, users[idx].inscritLe ? { inscritLe: users[idx].inscritLe } : {}, jourAnniv(users[idx].naissance) ? { anniv: jourAnniv(users[idx].naissance) } : {})).catch(function(){});
   showToast('✅ Adhésion validée'); renderAdmin();
 }
 function adminDesactiver(id){

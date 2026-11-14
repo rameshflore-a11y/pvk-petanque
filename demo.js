@@ -61,7 +61,7 @@
     fonction: 'Membre', inscritLe: iso, abonnement: { statut: 'actif' }, paiements: pay };
   var noms = [['Rajan','Ramassamy'],['Anand','Selvam'],['Bala','Murugan'],['Vijay','Kannan'],['Suresh','Pillai'],['Mohan','Das'],['Arun','Prakash'],['Karthik','Raman'],['Senthil','Nathan'],['Kumar','Raja']];
   store.annuaire = {};
-  noms.forEach(function(n, i){ store.annuaire['m' + i] = { prenom: n[0], nom: n[1], tel: '06 00 00 00 0' + i, fonction: 'Membre', actif: true }; });
+  noms.forEach(function(n, i){ var A=['11-28','12-09','01-17','02-03','03-21','04-30','06-12','08-25','10-02']; store.annuaire['m' + i] = { prenom: n[0], nom: n[1], tel: '06 00 00 00 0' + i, fonction: 'Membre', actif: true, anniv: A[i % A.length] }; });
   store.annuaire[uid] = { prenom: 'Invité', nom: 'Démo', tel: '06 00 00 00 00', fonction: 'Membre', actif: true };
   store.presences = {}; store.presences[iso] = { m0: { nom: 'Rajan Ramassamy', ts: 1 }, m2: { nom: 'Bala Murugan', ts: 2 }, m3: { nom: 'Vijay Kannan', ts: 3 }, m7: { nom: 'Karthik Raman', ts: 4 } };
   var dateFr = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
