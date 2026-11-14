@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=57"/>
+  <link rel="stylesheet" href="style.css?v=58"/>
 </head>
 <body>
 
@@ -244,6 +244,12 @@
         <div class="card mb-12">
           <p class="club-text">Bienvenue au club Pétanque Vetri Kazhagam d'Osny ! Notre club, fondé dans l'esprit de partage et de convivialité, réunit des passionnés de pétanque de tous niveaux. Que vous soyez débutant ou confirmé, vous trouverez ici une famille accueillante.</p>
           <p class="club-text mt-8">Venez nous rejoindre sur nos terrains de la Chaussée Jules César pour des entraînements conviviaux et des tournois animés !</p>
+        </div>
+        <div class="card mb-12 caisse-card hidden" id="caisseCard">
+          <div class="section-title mb-8">💰 Argent récolté</div>
+          <div class="caisse-montant" id="caisseMontant">…</div>
+          <div class="caisse-detail" id="caisseDetail"></div>
+          <p class="caisse-note">Cotisations des membres, pour le matériel et la vie du club.</p>
         </div>
         <div class="card hidden" id="bureauCard">
           <div class="section-title mb-8">Le Bureau</div>
@@ -706,6 +712,19 @@
           <div class="admin-stat-card"><div class="admin-stat-val" id="statExpires">0</div><div class="admin-stat-lbl">Inactifs</div></div>
           <div class="admin-stat-card"><div class="admin-stat-val" id="statCA">0€</div><div class="admin-stat-lbl">Encaissé</div></div>
         </div>
+        <div class="section-title mt-16">💰 Cotisations hors appli</div>
+        <div class="card mb-12 ha-card">
+          <p class="ha-aide">Pour les membres qui ont payé sans compte dans l'appli. Les noms restent visibles par vous seul ; les membres ne voient que le total.</p>
+          <div class="ha-form">
+            <input type="text" id="haNom" placeholder="Nom (ex. Murugan)" maxlength="60"/>
+            <input type="text" id="haMontant" inputmode="decimal" value="5" placeholder="Montant €"/>
+            <input type="date" id="haDate"/>
+            <input type="text" id="haNote" placeholder="Note (facultatif)" maxlength="80"/>
+            <button class="btn-primary" onclick="adminAjouterHorsAppli()">➕ Ajouter</button>
+          </div>
+          <div class="ha-resume" id="horsAppliResume"></div>
+          <div id="horsAppliListe"></div>
+        </div>
         <div class="section-title mt-16">Gestion des membres</div>
         <div id="adminMembersContainer"></div>
 
@@ -760,7 +779,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=61"></script>
+<script src="app.js?v=62"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

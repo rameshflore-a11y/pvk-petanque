@@ -589,6 +589,7 @@ function renderAccueil() {
 
 /* ===================== CLUB ===================== */
 function renderClub() {
+  renderCaisseMembres();
   const c = document.getElementById('bureauList');
   const carte = document.getElementById('bureauCard');
   carte.classList.add('hidden');   // la carte « Le Bureau » n'apparaît que s'il y a des membres du bureau
@@ -2221,6 +2222,72 @@ function synchroniserAnnuaire(users) {
 }
 
 
+/* ===================== ARGENT RÉCOLTÉ ===================== */
+// Les cotisations payées sans compte dans l'appli sont saisies par l'admin.
+// Le détail (noms, montants) reste privé : users/<admin>/horsAppli. Seul le total est publié dans config/caisse.
+let caisseUsers = [], horsAppli = [];
+function refHorsAppli() { return db.ref('users/' + currentUser.id + '/horsAppli'); }
+function chargerHorsAppli() {
+  if (!db || !currentUser || currentUser.role !== 'admin') return;
+  fbList('users/' + currentUser.id + '/horsAppli', function(list) {
+    horsAppli = (list || []).sort((a,b) => (b.date || '').localeCompare(a.date || '') || (b.ts||0) - (a.ts||0));
+    afficherHorsAppli();
+  });
+}
+function totauxCaisse() {
+  const appliPayeurs = caisseUsers.filter(u => paiementsResume(u.paiements).montant > 0);
+  const appli = appliPayeurs.reduce((t, u) => t + paiementsResume(u.paiements).montant, 0);
+  const hors = horsAppli.reduce((t, h) => t + (+h.montant || 0), 0);
+  const nomsHors = new Set(horsAppli.map(h => String(h.nom || '').trim().toLowerCase()));
+  return { appli: appli, hors: hors, total: Math.round((appli + hors) * 100) / 100, nb: appliPayeurs.length + nomsHors.size };
+}
+function afficherHorsAppli() {
+  const t = totauxCaisse();
+  const st = document.getElementById('statCA'); if (st) st.textContent = fmtEuro(t.total) + '€';
+  const r = document.getElementById('horsAppliResume');
+  if (r) r.innerHTML = `Appli : <b>${fmtEuro(t.appli)} €</b> · Hors appli : <b>${fmtEuro(t.hors)} €</b> · <span class="ha-total">Total : ${fmtEuro(t.total)} €</span>`;
+  const l = document.getElementById('horsAppliListe');
+  if (l) l.innerHTML = horsAppli.length ? horsAppli.map(h => `<div class="ha-ligne">
+      <div><b>${escapeHtml(h.nom || '')}</b><span>${h.date ? new Date(h.date).toLocaleDateString('fr-FR') : ''}${h.note ? ' · ' + escapeHtml(h.note) : ''}</span></div>
+      <div class="ha-montant">${fmtEuro(+h.montant || 0)} €</div>
+      <button class="ha-del" onclick="adminSupprimerHorsAppli('${h.id}')" aria-label="Supprimer">🗑️</button></div>`).join('')
+    : '<p class="vide">Aucune cotisation hors appli pour le moment.</p>';
+  publierCaisse(t);
+}
+function publierCaisse(t) {
+  if (!db || !currentUser || currentUser.role !== 'admin') return;
+  db.ref('config/caisse').update({ encaisse: t.total, nb: t.nb, maj: Date.now() }).catch(function(){});
+}
+function adminAjouterHorsAppli() {
+  if (!db || !currentUser || currentUser.role !== 'admin') return;
+  const nom = (document.getElementById('haNom').value || '').trim();
+  const montant = Math.round((parseFloat((document.getElementById('haMontant').value || '').replace(',', '.')) || 0) * 100) / 100;
+  const date = document.getElementById('haDate').value || dateISO(new Date());
+  const note = (document.getElementById('haNote').value || '').trim();
+  if (!nom || montant <= 0) { showToast('⚠️ Indiquez le nom et le montant'); return; }
+  refHorsAppli().push({ nom: nom.slice(0, 60), montant: montant, date: date, note: note.slice(0, 80), ts: Date.now() })
+    .then(function() { ['haNom','haNote'].forEach(id => document.getElementById(id).value = ''); document.getElementById('haMontant').value = '5';
+      showToast('💰 Cotisation ajoutée'); chargerHorsAppli(); })
+    .catch(function() { showToast('⚠️ Ajout impossible'); });
+}
+function adminSupprimerHorsAppli(id) {
+  if (!confirm('Supprimer cette cotisation ?')) return;
+  refHorsAppli().child(id).remove().then(function(){ showToast('🗑️ Cotisation supprimée'); chargerHorsAppli(); })
+    .catch(function(){ showToast('⚠️ Suppression impossible'); });
+}
+// Carte visible par tous les membres actifs (page « Le Club »)
+function renderCaisseMembres() {
+  const carte = document.getElementById('caisseCard'); if (!carte) return;
+  carte.classList.add('hidden');
+  if (!db || !canAccess('membres')) return;
+  db.ref('config/caisse').once('value').then(function(snap) {
+    const c = snap.val(); if (!c || !(+c.encaisse > 0)) return;
+    document.getElementById('caisseMontant').textContent = fmtEuro(+c.encaisse) + ' €';
+    document.getElementById('caisseDetail').textContent = (c.nb ? c.nb + ' cotisant' + (c.nb > 1 ? 's' : '') + ' · ' : '') + 'mis à jour le ' + new Date(c.maj || Date.now()).toLocaleDateString('fr-FR');
+    carte.classList.remove('hidden');
+  }).catch(function(){});
+}
+
 function renderAdminWithUsers(users) {
   var actifs  = users.filter(function(u){ return isAbonnementActif(u); });
   var expires = users.filter(function(u){ return !isAbonnementActif(u); });
@@ -2229,6 +2296,7 @@ function renderAdminWithUsers(users) {
   document.getElementById('statExpires').textContent = expires.length;
   var encaisse = users.reduce(function(s, u){ return s + paiementsResume(u.paiements).montant; }, 0);
   document.getElementById('statCA').textContent      = encaisse + '€';
+  caisseUsers = users; chargerHorsAppli();
   renderAdminFinance(users);
   document.getElementById('adminMembersContainer').innerHTML = users.map(function(u) {
     var ok = isAbonnementActif(u);
@@ -2364,3 +2432,5 @@ window.addEventListener('DOMContentLoaded', function() {
     }
   });
 });
+
+function fmtEuro(n) { n = Number(n || 0); return n.toLocaleString('fr-FR', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); }
