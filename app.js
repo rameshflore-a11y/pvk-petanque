@@ -1469,6 +1469,16 @@ function chargerNomsStations(callback) {
     })
     .catch(() => callback({}));
 }
+// Noms connus des stations de Cergy et Osny, retrouvés à partir de l'adresse (si OpenStreetMap n'a pas le nom)
+const STATIONS_CONNUES = [
+  [/hayettes/i, 'E.Leclerc'],
+  [/poirier charles gu[eé]rin|oseraie/i, 'Auchan'],
+  [/jules c[eé]sar/i, 'Total (Garage Rousseau)'],
+  [/champ pourri/i, 'Esso'],
+  [/(boulevard|bd|blvd)\.?\s+d.?\s?osny/i, 'Esso'],
+  [/grouettes|hautil/i, 'Esso']
+];
+function nomParAdresse(adr) { const t = STATIONS_CONNUES.find(x => x[0].test(String(adr || ''))); return t ? t[1] : ''; }
 function villeJolie(v) { v = String(v || '').toLowerCase(); return v.replace(/(^|[\s-])\S/g, c => c.toUpperCase()); }
 
 function choisirCarburant(f) { carbuChoix = f; renderCarburants(); }
@@ -1494,7 +1504,7 @@ function renderCarburants() {
       const q = encodeURIComponent((s.adresse + ' ' + s.cp + ' ' + s.ville).trim());
       return `<div class="carbu-ligne">
         <div class="carbu-rang">${i + 1}</div>
-        <div class="carbu-info"><div class="carbu-ville"><span class="carbu-nom" data-id="${escapeHtml(s.id || '')}">⛽ Station</span> <span class="carbu-lieu">· ${escapeHtml(villeJolie(s.ville))}</span></div>
+        <div class="carbu-info"><div class="carbu-ville"><span class="carbu-nom" data-id="${escapeHtml(s.id || '')}">⛽ ${escapeHtml(nomParAdresse(s.adresse) || 'Station')}</span> <span class="carbu-lieu">· ${escapeHtml(villeJolie(s.ville))}</span></div>
           <div class="carbu-adr">${escapeHtml(s.adresse)}</div>
           <div class="carbu-maj">${majDepuis(s.maj)}</div></div>
         <div class="carbu-droite"><div class="carbu-prix">${fmtNombre(s.prix, 3)} €</div>
