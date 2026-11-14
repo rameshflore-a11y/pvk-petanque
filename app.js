@@ -2276,16 +2276,92 @@ function adminSupprimerHorsAppli(id) {
     .catch(function(){ showToast('⚠️ Suppression impossible'); });
 }
 // Carte visible par tous les membres actifs (page « Le Club »)
+/* ===================== COMPTES + MATÉRIEL DU CLUB (page « Le Club ») ===================== */
+// config/caisse (total récolté, publié par l'admin) et config/materiel (achats) : lus par les membres, écrits par l'admin.
+const CATS_MATERIEL = { cercle:['⭕','Cercles'], cochonnet:['🟡','Cochonnets'], lampe:['💡','Éclairage'], mesure:['📏','Mesure'], boules:['⚫','Boules'], rangement:['🧳','Rangement'], autre:['📦','Autre'] };
+const ETATS_MATERIEL = { bon:['✅','Bon état'], use:['🟠','Usé'], remplacer:['🔴','À remplacer'] };
+let materielCache = [], matEdition = null;
+
 function renderCaisseMembres() {
-  const carte = document.getElementById('caisseCard'); if (!carte) return;
-  carte.classList.add('hidden');
+  const carte = document.getElementById('caisseCard'), sect = document.getElementById('materielSection');
+  if (!carte || !sect) return;
+  carte.classList.add('hidden'); sect.classList.add('hidden');
   if (!db || !canAccess('membres')) return;
-  db.ref('config/caisse').once('value').then(function(snap) {
-    const c = snap.val(); if (!c || !(+c.encaisse > 0)) return;
-    document.getElementById('caisseMontant').textContent = fmtEuro(+c.encaisse) + ' €';
-    document.getElementById('caisseDetail').textContent = (c.nb ? c.nb + ' cotisant' + (c.nb > 1 ? 's' : '') + ' · ' : '') + 'mis à jour le ' + new Date(c.maj || Date.now()).toLocaleDateString('fr-FR');
-    carte.classList.remove('hidden');
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  Promise.all([db.ref('config/caisse').once('value'), fbListP('config/materiel')]).then(function(r) {
+    const c = r[0].val() || {}, list = r[1] || [];
+    materielCache = list;
+    const recolte = +c.encaisse || 0, depense = list.reduce((t, m) => t + (+m.prix || 0), 0), reste = Math.round((recolte - depense) * 100) / 100;
+    if (recolte > 0 || list.length) {
+      document.getElementById('matCaisse').innerHTML = `<div class="recolte"><span>${fmtEuro(recolte)} €</span>récoltés</div>
+        <div><span>${fmtEuro(depense)} €</span>dépensés</div>
+        <div class="reste${reste < 0 ? ' neg' : ''}"><span>${fmtEuro(reste)} €</span>restant</div>`;
+      document.getElementById('caisseDetail').textContent = (c.nb ? c.nb + ' cotisant' + (c.nb > 1 ? 's' : '') + ' · ' : '') + (c.maj ? 'mis à jour le ' + new Date(c.maj).toLocaleDateString('fr-FR') : '');
+      carte.classList.remove('hidden');
+    }
+    if (list.length || isAdmin) { sect.classList.remove('hidden'); afficherMateriel(list, isAdmin); }
   }).catch(function(){});
+}
+
+function afficherMateriel(list, isAdmin) {
+  document.getElementById('matOuvrir').classList.toggle('hidden', !isAdmin);
+  const sel = document.getElementById('matCat');
+  if (!sel.options.length) sel.innerHTML = Object.keys(CATS_MATERIEL).map(k => `<option value="${k}">${CATS_MATERIEL[k][0]} ${CATS_MATERIEL[k][1]}</option>`).join('');
+  const l = document.getElementById('materielListe');
+  if (!list.length) { l.innerHTML = '<p class="vide">Aucun matériel enregistré pour le moment.</p>'; return; }
+  const nb = list.reduce((t, m) => t + (+m.qte || 1), 0), aRemplacer = list.filter(m => m.etat === 'remplacer').length;
+  l.innerHTML = `<p class="mat-sous">${nb} objet${nb > 1 ? 's' : ''}${aRemplacer ? ` · 🔴 ${aRemplacer} à remplacer` : ''}</p>` +
+    list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(m => {
+      const e = ETATS_MATERIEL[m.etat] || ETATS_MATERIEL.bon, cat = CATS_MATERIEL[m.cat] || CATS_MATERIEL.autre;
+      return `<div class="mat-item">
+        <div class="mat-haut"><div class="mat-nom">${cat[0]} ${escapeHtml(m.nom || '')} <span class="mat-qte">× ${+m.qte || 1}</span></div><span class="mat-etat ${ETATS_MATERIEL[m.etat] ? m.etat : 'bon'}">${e[0]} ${e[1]}</span></div>
+        <div class="mat-info">${m.prix ? '💶 ' + fmtEuro(+m.prix) + ' €' : ''}${m.date ? ' · 🗓️ ' + formatDateFr(m.date) : ''}${m.garde ? ' · 👤 ' + escapeHtml(m.garde) : ''}</div>
+        ${m.note ? `<div class="mat-note">${escapeHtml(m.note)}</div>` : ''}
+        ${isAdmin ? `<div class="mat-admin"><button class="admin-btn" onclick="editerMateriel('${m.id}')">✏️ Modifier</button><button class="admin-btn del" onclick="supprimerMateriel('${m.id}')">🗑️</button></div>` : ''}
+      </div>`;
+    }).join('');
+}
+function ouvrirFormMateriel() {
+  annulerEditionMateriel();
+  document.getElementById('materielAdmin').classList.remove('hidden');
+  document.getElementById('matNom').focus();
+}
+function viderFormMateriel() {
+  ['matNom','matPrix','matDate','matGarde','matNote'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('matQte').value = 1; document.getElementById('matEtat').value = 'bon'; document.getElementById('matCat').selectedIndex = 0;
+}
+function adminEnregistrerMateriel() {
+  if (!db || !currentUser || currentUser.role !== 'admin') return;
+  const v = id => (document.getElementById(id).value || '').trim();
+  const nom = v('matNom'); if (!nom) { showToast('⚠️ Indiquez le nom du matériel'); return; }
+  const m = { nom: nom.slice(0, 80), cat: CATS_MATERIEL[v('matCat')] ? v('matCat') : 'autre', qte: Math.max(1, parseInt(v('matQte'), 10) || 1),
+              prix: Math.max(0, Math.round((parseFloat(v('matPrix').replace(',', '.')) || 0) * 100) / 100), date: v('matDate') || dateISO(new Date()),
+              etat: ETATS_MATERIEL[v('matEtat')] ? v('matEtat') : 'bon', garde: v('matGarde').slice(0, 60), note: v('matNote').slice(0, 150), ts: Date.now() };
+  const modif = !!matEdition;
+  const action = modif ? db.ref('config/materiel/' + matEdition).set(m) : db.ref('config/materiel').push(m);
+  action.then(function() { showToast(modif ? '💾 Matériel modifié' : '📦 Matériel ajouté'); annulerEditionMateriel(); renderCaisseMembres(); })
+    .catch(() => showToast('⚠️ Enregistrement impossible'));
+}
+function editerMateriel(id) {
+  const m = materielCache.find(x => x.id === id); if (!m) return;
+  matEdition = id;
+  document.getElementById('matNom').value = m.nom || ''; document.getElementById('matCat').value = CATS_MATERIEL[m.cat] ? m.cat : 'autre';
+  document.getElementById('matQte').value = m.qte || 1; document.getElementById('matPrix').value = m.prix || '';
+  document.getElementById('matDate').value = m.date || ''; document.getElementById('matEtat').value = m.etat || 'bon';
+  document.getElementById('matGarde').value = m.garde || ''; document.getElementById('matNote').value = m.note || '';
+  document.getElementById('matFormTitre').textContent = '✏️ Modifier : ' + (m.nom || '');
+  document.getElementById('materielAdmin').classList.remove('hidden');
+  document.getElementById('materielAdmin').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function annulerEditionMateriel() {
+  matEdition = null; viderFormMateriel();
+  document.getElementById('matFormTitre').textContent = '➕ Ajouter du matériel';
+  document.getElementById('materielAdmin').classList.add('hidden');
+}
+function supprimerMateriel(id) {
+  if (!confirm('Supprimer ce matériel de l\'inventaire ?')) return;
+  db.ref('config/materiel/' + id).remove().then(() => { showToast('🗑️ Matériel supprimé'); renderCaisseMembres(); })
+    .catch(() => showToast('⚠️ Suppression impossible'));
 }
 
 function renderAdminWithUsers(users) {

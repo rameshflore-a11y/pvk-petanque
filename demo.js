@@ -73,7 +73,10 @@
                    a2: { date: plus(12), name: '🍛 Repas du club (exemple)', detail: 'Après la partie', type: 'special', ts: 2 } };
   store.films = { f1: { titre: 'Film tamoul (exemple)', langue: 'ta', resume: 'Exemple de fiche : affiche, résumé, cinémas et lien pour réserver.', cinemas: ['Cinéma près de chez vous'], ts: 2 },
                   f2: { titre: 'Film hindi (exemple)', langue: 'hi', resume: 'Exemple de fiche : affiche, résumé, cinémas et lien pour réserver.', cinemas: ['Cinéma près de chez vous'], ts: 1 } };
-  store.config = { caisse: { encaisse: 85, nb: 17, maj: Date.now() } };
+  store.config = { caisse: { encaisse: 85, nb: 17, maj: Date.now() }, materiel: {
+    x1: { nom: 'Cercles de lancer', cat: 'cercle', qte: 4, prix: 24, date: plus(-20), etat: 'bon', garde: 'Rajan', ts: 1 },
+    x2: { nom: 'Cochonnets en buis', cat: 'cochonnet', qte: 10, prix: 15, date: plus(-20), etat: 'bon', garde: 'Rajan', ts: 2 },
+    x3: { nom: 'Mètre de pétanque', cat: 'mesure', qte: 1, prix: 8.5, date: plus(-40), etat: 'use', garde: 'Vijay', ts: 3 } } };
   store.matchs = {}; store.matchs[iso] = { d1: { eqA: { nom: 'Équipe 1', joueurs: ['Bala Murugan', 'Vijay Kannan'] }, eqB: { nom: 'Équipe 2', joueurs: ['Rajan Ramassamy', 'Karthik Raman'] }, ts: 1, par: 'Rajan Ramassamy',
     menes: { a: { eq: 'A', pts: 2, ts: 1 }, b: { eq: 'B', pts: 1, ts: 2 }, c: { eq: 'A', pts: 3, ts: 3 }, d: { eq: 'B', pts: 4, ts: 4 } } } };
   cur = { uid: uid, email: 'demo@demo.pvk' };   // connecté automatiquement

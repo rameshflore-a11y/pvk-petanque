@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=58"/>
+  <link rel="stylesheet" href="style.css?v=59"/>
 </head>
 <body>
 
@@ -231,6 +231,34 @@
     <div id="page-club" class="page">
       <div class="page-inner">
         <h2 class="page-title">Le Club</h2>
+        <div class="card mb-12 caisse-card hidden" id="caisseCard">
+          <div class="section-title mb-8">💰 Les comptes du club</div>
+          <div class="mat-resume" id="matCaisse"></div>
+          <div class="caisse-detail" id="caisseDetail"></div>
+          <p class="caisse-note">Cotisations des membres, pour le matériel et la vie du club.</p>
+        </div>
+        <div id="materielSection" class="mb-12 hidden">
+          <div class="mat-titre"><div class="section-title">📦 Matériel du club</div>
+            <button class="admin-btn hidden" id="matOuvrir" onclick="ouvrirFormMateriel()">➕ Ajouter</button></div>
+          <div id="materielAdmin" class="card mb-12 hidden">
+            <div class="section-title mb-8" id="matFormTitre">➕ Ajouter du matériel</div>
+            <input type="text" id="matNom" class="fin-search" maxlength="80" placeholder="Nom (ex : Cochonnets en buis)"/>
+            <select id="matCat" class="fin-search"></select>
+            <div class="vol-dates">
+              <label>Quantité<input type="number" id="matQte" min="1" value="1" inputmode="numeric"/></label>
+              <label>Prix total (€)<input type="number" id="matPrix" min="0" step="0.01" inputmode="decimal" placeholder="0"/></label>
+            </div>
+            <div class="vol-dates mt-8">
+              <label>Date d'achat<input type="date" id="matDate"/></label>
+              <label>État<select id="matEtat"><option value="bon">✅ Bon état</option><option value="use">🟠 Usé</option><option value="remplacer">🔴 À remplacer</option></select></label>
+            </div>
+            <input type="text" id="matGarde" class="fin-search mt-8" maxlength="60" placeholder="Gardé par (ex : Ramesh)"/>
+            <input type="text" id="matNote" class="fin-search" maxlength="150" placeholder="Note (facultatif : magasin, n° de facture…)"/>
+            <button class="btn-primary btn-full" onclick="adminEnregistrerMateriel()">💾 Enregistrer</button>
+            <button class="btn-outline btn-full mt-8" onclick="annulerEditionMateriel()">Annuler</button>
+          </div>
+          <div id="materielListe"></div>
+        </div>
         <div class="club-banner">
           <div class="club-logo-big">PVK</div>
           <div class="club-tagline">Pétanque Vetri Kazhagam<br/><span>Fondé avec passion</span></div>
@@ -244,12 +272,6 @@
         <div class="card mb-12">
           <p class="club-text">Bienvenue au club Pétanque Vetri Kazhagam d'Osny ! Notre club, fondé dans l'esprit de partage et de convivialité, réunit des passionnés de pétanque de tous niveaux. Que vous soyez débutant ou confirmé, vous trouverez ici une famille accueillante.</p>
           <p class="club-text mt-8">Venez nous rejoindre sur nos terrains de la Chaussée Jules César pour des entraînements conviviaux et des tournois animés !</p>
-        </div>
-        <div class="card mb-12 caisse-card hidden" id="caisseCard">
-          <div class="section-title mb-8">💰 Argent récolté</div>
-          <div class="caisse-montant" id="caisseMontant">…</div>
-          <div class="caisse-detail" id="caisseDetail"></div>
-          <p class="caisse-note">Cotisations des membres, pour le matériel et la vie du club.</p>
         </div>
         <div class="card hidden" id="bureauCard">
           <div class="section-title mb-8">Le Bureau</div>
@@ -779,7 +801,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=62"></script>
+<script src="app.js?v=63"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
