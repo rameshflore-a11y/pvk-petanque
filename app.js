@@ -509,7 +509,7 @@ function showPage(page) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(`page-${page}`);
   if (el) el.classList.add('active');
-  const navMap = { accueil:'navAccueil', agenda:'navAgenda', actualites:'navActus', membres:'navMembres', profil:'navProfil' };
+  const navMap = { accueil:'navAccueil', club:'navClub', agenda:'navAgenda', actualites:'navActus', membres:'navMembres', profil:'navProfil' };
   if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
   currentPage = page;
   if (page !== 'login') renderPage(page);
