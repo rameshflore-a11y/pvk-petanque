@@ -1422,10 +1422,11 @@ const carbuCache = {};
 function chargerCarburant(f, callback) {
   const c = carbuCache[f];
   if (c && Date.now() - c.ts < 15 * 60000) { callback(c.liste); return; }
-  const base = 'select=' + encodeURIComponent(['adresse','ville','cp',f + '_prix',f + '_maj'].join(',')) + '&order_by=' + f + '_prix&limit=30';
+  const base = 'select=' + encodeURIComponent(['adresse','ville','cp',f + '_prix',f + '_maj'].join(',')) + '&order_by=' + f + '_prix&limit=50';
+  // Cergy (95000, 95800) et Osny (95520)
   const essais = [
+    base + '&where=' + encodeURIComponent('(cp="95000" or cp="95800" or cp="95520") and ' + f + '_prix is not null'),
     base + '&where=' + encodeURIComponent('code_departement="95" and ' + f + '_prix is not null'),
-    base + '&where=' + encodeURIComponent('startswith(cp,"95") and ' + f + '_prix is not null'),
     base + '&refine=' + encodeURIComponent('code_departement:95')
   ];
   const essai = i => {
@@ -1433,9 +1434,13 @@ function chargerCarburant(f, callback) {
     fetch(CARBU_API + '?' + essais[i]).then(r => { if (!r.ok) throw new Error('carbu ' + r.status); return r.json(); })
       .then(j => {
         const limite = Date.now() - 8 * 86400000;   // on ignore les prix de plus de 8 jours
-        const liste = (j.results || []).filter(x => x[f + '_prix'] && String(x.cp || '').startsWith('95')
-            && (!x[f + '_maj'] || new Date(x[f + '_maj']).getTime() >= limite))
-          .slice(0, 3).map(x => ({ adresse: x.adresse || '', ville: x.ville || '', cp: x.cp || '', prix: +x[f + '_prix'], maj: x[f + '_maj'] || '' }));
+        const recents = (j.results || []).filter(x => x[f + '_prix'] && ['95000','95800','95520'].includes(String(x.cp || ''))
+            && (!x[f + '_maj'] || new Date(x[f + '_maj']).getTime() >= limite));
+        // Le code postal 95000 est partagé avec Pontoise : on garde Cergy et Osny par leur nom quand il est connu
+        const parNom = recents.filter(x => /cergy|osny/i.test(String(x.ville || '')));
+        const liste = (parNom.length >= 3 ? parNom : recents)
+          .sort((a, b) => (+a[f + '_prix']) - (+b[f + '_prix']))
+          .slice(0, 5).map(x => ({ adresse: x.adresse || '', ville: x.ville || '', cp: x.cp || '', prix: +x[f + '_prix'], maj: x[f + '_maj'] || '' }));
         if (!j.results) throw new Error('vide');
         carbuCache[f] = { ts: Date.now(), liste: liste }; callback(liste);
       })

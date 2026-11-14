@@ -518,10 +518,10 @@
     <div id="page-carburants" class="page">
       <div class="page-inner">
         <h2 class="page-title">⛽ Carburants</h2>
-        <p class="page-subtitle">Les stations les moins chères du Val-d'Oise</p>
+        <p class="page-subtitle">Les stations les moins chères de Cergy et Osny</p>
         <!-- Carburants -->
         <div class="card">
-          <div class="section-title mb-8">Les 3 stations les moins chères</div>
+          <div class="section-title mb-8">Les 5 stations les moins chères</div>
           <div class="carbu-onglets">
             <button class="carbu-onglet actif" data-c="gazole" onclick="choisirCarburant('gazole')">Gazole</button>
             <button class="carbu-onglet" data-c="e10" onclick="choisirCarburant('e10')">SP95-E10</button>
@@ -760,7 +760,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=55"></script>
+<script src="app.js?v=56"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
