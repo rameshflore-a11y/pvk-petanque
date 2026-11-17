@@ -511,7 +511,7 @@ function showPage(page) {
   if (el) el.classList.add('active');
   const navMap = { accueil:'navAccueil', club:'navClub', agenda:'navAgenda', actualites:'navActus', membres:'navMembres', profil:'navProfil' };
   if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
-  if (currentPage === 'chat' && page !== 'chat') arreterChat();
+  if (currentPage === 'chat' && page !== 'chat') { arreterChat(); if (chatEdition) annulerModifMessage(); }
   currentPage = page;
   if (page !== 'login') renderPage(page);
   window.scrollTo(0,0);
@@ -1959,7 +1959,7 @@ function majBadges() {
 /* ===================== 💬 DISCUSSION DU CLUB (messages éphémères 24 h) ===================== */
 // chat/<id> = { uid, nom, texte, ts } — lu et écrit par les membres actifs ; effacé au bout de 24 h (règles Firebase).
 const CHAT_DUREE = 24 * 3600 * 1000;
-let chatMessages = [], chatRef = null, chatPoll = null, chatNettoye = 0;
+let chatMessages = [], chatRef = null, chatPoll = null, chatNettoye = 0, chatEdition = null;
 
 function nomCourt(u) { return ((u.prenom || '') + (u.nom ? ' ' + u.nom.charAt(0).toUpperCase() + '.' : '')).trim() || 'Membre'; }
 
@@ -2010,7 +2010,7 @@ function afficherChat() {
     const texte = escapeHtml(m.texte || '').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
     return `<div class="chat-msg${mien ? ' mien' : ''}${suite ? ' suite' : ''}">
       ${!mien && !suite ? `<div class="chat-nom">${escapeHtml(m.nom || 'Membre')}</div>` : ''}
-      <div class="chat-bulle">${texte}<span class="chat-heure">${heureChat(m.ts)}${mien || isAdmin ? ` <button class="chat-suppr" onclick="supprimerMessage('${m.id}')" aria-label="Supprimer">🗑️</button>` : ''}</span></div>
+      <div class="chat-bulle">${texte}<span class="chat-heure">${m.modif ? '<i>modifié</i> · ' : ''}${heureChat(m.ts)}${mien ? ` <button class="chat-suppr" onclick="modifierMessage('${m.id}')" aria-label="Modifier">✏️</button>` : ''}${mien || isAdmin ? ` <button class="chat-suppr" onclick="supprimerMessage('${m.id}')" aria-label="Supprimer">🗑️</button>` : ''}</span></div>
     </div>`;
   }).join('');
   l.dataset.init = '1';
@@ -2022,10 +2022,27 @@ function envoyerMessage() {
   if (!db || !currentUser || !canAccess('chat')) return;
   const t = document.getElementById('chatTexte'), texte = (t.value || '').trim().slice(0, 500);
   if (!texte) return;
+  if (chatEdition) {   // modification d'un message existant
+    const id = chatEdition; annulerModifMessage();
+    db.ref('chat/' + id).update({ texte: texte, modif: Date.now() }).then(function() { if (chatPoll) ecouterChat(); })
+      .catch(function() { showToast('⚠️ Modification impossible'); });
+    return;
+  }
   const msg = { uid: currentUser.id, nom: nomCourt(currentUser), texte: texte, ts: Date.now() };
   t.value = ''; ajusterChat(t);
   db.ref('chat').push(msg).then(function() { if (chatPoll) ecouterChat(); })
     .catch(function() { t.value = texte; showToast('⚠️ Message non envoyé'); });
+}
+function modifierMessage(id) {
+  const m = chatMessages.find(x => x.id === id); if (!m || m.uid !== currentUser.id) return;
+  chatEdition = id;
+  const t = document.getElementById('chatTexte'); t.value = m.texte || ''; ajusterChat(t); t.focus();
+  document.getElementById('chatEdition').classList.remove('hidden');
+}
+function annulerModifMessage() {
+  chatEdition = null;
+  const t = document.getElementById('chatTexte'); t.value = ''; ajusterChat(t);
+  document.getElementById('chatEdition').classList.add('hidden');
 }
 function supprimerMessage(id) {
   if (!confirm('Supprimer ce message ?')) return;

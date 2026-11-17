@@ -24,7 +24,7 @@
     if(['news','agenda','films','config','festivals'].includes(s[0])) return isAdmin();
     if(s[0]==='annuaire' && s.length>=2){ if(isAdmin()) return true; return s[1]===cur.uid && s.length===3 && ['prenom','nom','tel','fonction'].includes(s[2]); }
     if(s[0]==='matchs') return s.length>=2 && (isAdmin()||actif());
-    if(s[0]==='chat') return s.length===2 && (isAdmin()||actif());
+    if(s[0]==='chat') return s.length>=2 && (isAdmin()||actif());
     if(s[0]==='presences'){ if(isAdmin()) return true; return s.length===3 && s[2]===cur.uid && actif(); }
     if(s.length===0) return isAdmin();
     if(s[0]==='users' && s.length>=2){ if(isAdmin()) return true; return s[1]===cur.uid && s.length===3 && SELF.includes(s[2]); }
