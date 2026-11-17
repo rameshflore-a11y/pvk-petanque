@@ -319,7 +319,7 @@ function escapeHtml(s) {
 // Pages libres à tous les membres connectés (payants ou non)
 const FREE_PAGES = ['accueil','club','agenda','actualites','adhesion','abonnement','profil','festivals','promos','carburants','voyage','rasi'];
 // Pages réservées aux adhérents actifs
-const MEMBER_PAGES = ['contacts','carte','membres','films','tirage','score'];
+const MEMBER_PAGES = ['contacts','carte','membres','films','tirage','score','chat'];
 // Page admin uniquement
 const ADMIN_PAGES = ['admin'];
 
@@ -511,6 +511,7 @@ function showPage(page) {
   if (el) el.classList.add('active');
   const navMap = { accueil:'navAccueil', club:'navClub', agenda:'navAgenda', actualites:'navActus', membres:'navMembres', profil:'navProfil' };
   if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
+  if (currentPage === 'chat' && page !== 'chat') arreterChat();
   currentPage = page;
   if (page !== 'login') renderPage(page);
   window.scrollTo(0,0);
@@ -534,6 +535,7 @@ function renderPage(page) {
     case 'rasi':       renderRasi(); break;
     case 'tirage':     renderTirage(); break;
     case 'score':      renderScore(); break;
+    case 'chat':       renderChat(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
   }
@@ -1937,6 +1939,7 @@ function poserBadge(id, n) {
 let badgeTimer = null;
 function majBadges() {
   if (!db || !currentUser) return;
+  compterChat();
   ['news', 'agenda'].forEach(cle => { if (lireVu(cle) === null) { try { localStorage.setItem('pvk_vu_' + cle, String(Date.now())); } catch (e) {} } });
   Promise.all([fbListP('news'), fbListP('agenda')]).then(function(r) {
     const nouveaux = (l, cle) => (l || []).filter(x => (x.ts || 0) > (lireVu(cle) || Date.now())).length;
@@ -1951,6 +1954,102 @@ function majBadges() {
     badgeTimer = setInterval(function() { if (!document.hidden) majBadges(); }, 60000);
     document.addEventListener('visibilitychange', function() { if (!document.hidden) majBadges(); });
   }
+}
+
+/* ===================== 💬 DISCUSSION DU CLUB (messages éphémères 24 h) ===================== */
+// chat/<id> = { uid, nom, texte, ts } — lu et écrit par les membres actifs ; effacé au bout de 24 h (règles Firebase).
+const CHAT_DUREE = 24 * 3600 * 1000;
+let chatMessages = [], chatRef = null, chatPoll = null, chatNettoye = 0;
+
+function nomCourt(u) { return ((u.prenom || '') + (u.nom ? ' ' + u.nom.charAt(0).toUpperCase() + '.' : '')).trim() || 'Membre'; }
+
+function renderChat() {
+  const ok = canAccess('chat');
+  document.getElementById('chatAccessMsg').classList.toggle('hidden', ok);
+  document.getElementById('chatSaisie').classList.toggle('hidden', !ok);
+  const l = document.getElementById('chatListe');
+  if (!ok || !db) { l.innerHTML = ''; return; }
+  l.innerHTML = '<p class="vide">⏳ Chargement…</p>';
+  ecouterChat();
+  nettoyerChat();
+}
+function ecouterChat() {
+  arreterChat();
+  const recevoir = function(v) {
+    const lim = Date.now() - CHAT_DUREE;
+    chatMessages = Object.keys(v || {}).map(k => Object.assign({ id: k }, v[k])).filter(m => (m.ts || 0) > lim).sort((a, b) => a.ts - b.ts);
+    afficherChat();
+    if (currentPage === 'chat') marquerVu('chat');
+  };
+  const ref = db.ref('chat');
+  if (typeof ref.on === 'function') {   // temps réel (Firebase)
+    chatRef = ref; ref.on('value', s => recevoir(s.val()), () => { document.getElementById('chatListe').innerHTML = '<p class="vide">Discussion indisponible (connexion ?).</p>'; });
+  } else {                              // mode démo : on relit toutes les 3 s
+    const lire = () => ref.once('value').then(s => recevoir(s.val())).catch(function(){});
+    lire(); chatPoll = setInterval(lire, 3000);
+  }
+}
+function arreterChat() {
+  if (chatRef) { try { chatRef.off('value'); } catch (e) {} chatRef = null; }
+  if (chatPoll) { clearInterval(chatPoll); chatPoll = null; }
+}
+function heureChat(ts) {
+  const d = new Date(ts), auj = new Date();
+  const h = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return d.toDateString() === auj.toDateString() ? h : 'hier ' + h;
+}
+function afficherChat() {
+  const l = document.getElementById('chatListe'); if (!l) return;
+  const moi = currentUser && currentUser.id, isAdmin = currentUser && currentUser.role === 'admin';
+  const enBas = l.scrollHeight - l.scrollTop - l.clientHeight < 80 || !l.dataset.init;
+  if (!chatMessages.length) { l.innerHTML = '<p class="vide chat-vide">Aucun message pour le moment.<br/>Lancez la discussion ! 👋</p>'; l.dataset.init = '1'; return; }
+  let precedent = null;
+  l.innerHTML = chatMessages.map(m => {
+    const mien = m.uid === moi, suite = precedent && precedent.uid === m.uid && m.ts - precedent.ts < 5 * 60000;
+    precedent = m;
+    const texte = escapeHtml(m.texte || '').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    return `<div class="chat-msg${mien ? ' mien' : ''}${suite ? ' suite' : ''}">
+      ${!mien && !suite ? `<div class="chat-nom">${escapeHtml(m.nom || 'Membre')}</div>` : ''}
+      <div class="chat-bulle">${texte}<span class="chat-heure">${heureChat(m.ts)}${mien || isAdmin ? ` <button class="chat-suppr" onclick="supprimerMessage('${m.id}')" aria-label="Supprimer">🗑️</button>` : ''}</span></div>
+    </div>`;
+  }).join('');
+  l.dataset.init = '1';
+  if (enBas) setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 30);
+}
+function ajusterChat(t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; }
+function toucheChat(e) { if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(pointer:fine)').matches) { e.preventDefault(); envoyerMessage(); } }
+function envoyerMessage() {
+  if (!db || !currentUser || !canAccess('chat')) return;
+  const t = document.getElementById('chatTexte'), texte = (t.value || '').trim().slice(0, 500);
+  if (!texte) return;
+  const msg = { uid: currentUser.id, nom: nomCourt(currentUser), texte: texte, ts: Date.now() };
+  t.value = ''; ajusterChat(t);
+  db.ref('chat').push(msg).then(function() { if (chatPoll) ecouterChat(); })
+    .catch(function() { t.value = texte; showToast('⚠️ Message non envoyé'); });
+}
+function supprimerMessage(id) {
+  if (!confirm('Supprimer ce message ?')) return;
+  db.ref('chat/' + id).remove().then(function() { if (chatPoll) ecouterChat(); }).catch(() => showToast('⚠️ Suppression impossible'));
+}
+// Efface les messages de plus de 24 h (au plus une fois toutes les 10 minutes)
+function nettoyerChat() {
+  if (!db || Date.now() - chatNettoye < 600000) return;
+  chatNettoye = Date.now();
+  db.ref('chat').once('value').then(function(s) {
+    const lim = Date.now() - CHAT_DUREE;
+    s.forEach(c => { const v = c.val() || {}; if ((v.ts || 0) < lim) db.ref('chat/' + c.key).remove().catch(function(){}); });
+  }).catch(function(){});
+}
+// Pastille : messages des autres depuis la dernière visite
+function compterChat() {
+  if (!db || !currentUser || !canAccess('chat')) { poserBadge('badgeChat', 0); return; }
+  if (lireVu('chat') === null) { try { localStorage.setItem('pvk_vu_chat', String(Date.now())); } catch (e) {} }
+  db.ref('chat').once('value').then(function(s) {
+    const vu = lireVu('chat') || Date.now(), lim = Date.now() - CHAT_DUREE; let n = 0;
+    s.forEach(c => { const v = c.val() || {}; if (v.uid !== currentUser.id && (v.ts || 0) > vu && v.ts > lim) n++; });
+    poserBadge('badgeChat', currentPage === 'chat' ? 0 : n);
+  }).catch(function(){});
+  nettoyerChat();
 }
 
 /* ===================== « JE VIENS CE SOIR » ===================== */

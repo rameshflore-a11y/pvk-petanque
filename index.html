@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=59"/>
+  <link rel="stylesheet" href="style.css?v=60"/>
 </head>
 <body>
 
@@ -104,6 +104,7 @@
       <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
       <li onclick="nav('tirage')"><span class="menu-icon">🎲</span> Tirage des équipes</li>
       <li onclick="nav('score')"><span class="menu-icon">🔴</span> Score en direct</li>
+      <li onclick="nav('chat')"><span class="menu-icon">💬</span> Discussion du club</li>
       <li onclick="nav('films')"><span class="menu-icon">🎬</span> Films</li>
       <li onclick="nav('promos')"><span class="menu-icon">🛒</span> Promos</li>
       <li onclick="nav('carburants')"><span class="menu-icon">⛽</span> Carburants</li>
@@ -216,6 +217,7 @@
 
         <!-- Accès rapide -->
         <div class="quick-grid-3 quick-barre" aria-label="Accès rapide">
+          <div class="quick-card" onclick="showPage('chat')"><span class="quick-icon">💬<span class="badge hidden" id="badgeChat"></span></span><span>Chat</span></div>
           <div class="quick-card" onclick="showPage('score')"><span class="quick-icon">🔴</span><span>Score</span></div>
           <div class="quick-card" onclick="showPage('promos')"><span class="quick-icon">🛒</span><span>Promos</span></div>
           <div class="quick-card" onclick="showPage('tirage')"><span class="quick-icon">🎲</span><span>Tirage</span></div>
@@ -620,6 +622,20 @@
     </div>
 
     <!-- SCORE EN DIRECT -->
+    <!-- DISCUSSION DU CLUB -->
+    <div id="page-chat" class="page">
+      <div class="page-inner chat-inner">
+        <h2 class="page-title">💬 Discussion du club</h2>
+        <p class="chat-info">⏳ Messages effacés automatiquement après 24 h</p>
+        <div id="chatAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents.</div>
+        <div id="chatListe" class="chat-liste"></div>
+      </div>
+      <div class="chat-saisie hidden" id="chatSaisie">
+        <textarea id="chatTexte" rows="1" maxlength="500" placeholder="Écrire un message…" oninput="ajusterChat(this)" onkeydown="toucheChat(event)"></textarea>
+        <button class="chat-envoyer" onclick="envoyerMessage()" aria-label="Envoyer">➤</button>
+      </div>
+    </div>
+
     <div id="page-score" class="page">
       <div class="page-inner">
         <h2 class="page-title">🔴 Score en direct</h2>
@@ -804,7 +820,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=66"></script>
+<script src="app.js?v=67"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>
