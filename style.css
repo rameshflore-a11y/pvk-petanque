@@ -1173,3 +1173,29 @@ body.fete-noel .fete-deco span { animation-name:neige; top:-30px; bottom:auto; }
 .chat-edition { flex-basis:100%; font-size:.8rem; color:var(--red); font-weight:700; display:flex; justify-content:space-between; align-items:center; }
 .chat-edition.hidden { display:none; }
 .chat-edition button { background:none; border:none; color:var(--text-muted); font-weight:700; text-decoration:underline; cursor:pointer; }
+
+/* ===== Classement ===== */
+.nav-btn { min-width:0; padding:8px 1px; }
+.bottom-nav .nav-label { font-size:.62rem; }
+.nav-label { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.class-regle { font-size:.8rem; color:var(--text-muted); text-align:center; margin:-8px 0 14px; }
+.podium { display:flex; align-items:flex-end; justify-content:center; gap:8px; margin:6px 0 16px; }
+.podium-place { flex:1; max-width:120px; text-align:center; }
+.podium-med { font-size:1.8rem; }
+.podium-nom { font-weight:800; font-size:.85rem; line-height:1.2; margin:2px 0; word-break:break-word; }
+.podium-pts { font-size:.75rem; color:var(--text-muted); font-weight:700; margin-bottom:4px; }
+.podium-socle { border-radius:10px 10px 0 0; color:#fff; font-weight:800; font-size:1.3rem; display:flex; align-items:center; justify-content:center; }
+.p1 .podium-socle { height:86px; background:linear-gradient(180deg,#F5C518,#D49B00); }
+.p2 .podium-socle { height:62px; background:linear-gradient(180deg,#C7CCD4,#9AA1AC); }
+.p3 .podium-socle { height:46px; background:linear-gradient(180deg,#E0A26B,#B8733A); }
+.class-card { padding:8px 6px; overflow-x:auto; }
+.class-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+.class-table th { font-size:.7rem; color:var(--text-muted); font-weight:700; padding:6px 4px; text-align:center; border-bottom:1px solid var(--border); }
+.class-table td { padding:8px 4px; text-align:center; border-bottom:1px solid var(--border); }
+.class-table .g { text-align:left; }
+.class-table td.g { font-weight:700; }
+.class-table td.pts { font-weight:800; color:var(--red); }
+.class-table tr.moi td { background:rgba(200,16,46,.08); }
+.class-table tr:last-child td { border-bottom:none; }
+.class-legende { font-size:.7rem; color:var(--text-muted); margin:8px 4px 0; }
+.class-prec { display:flex; justify-content:space-between; padding:6px 0; font-size:.9rem; }

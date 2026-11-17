@@ -83,7 +83,20 @@
                  c2: { uid: 'm2', nom: 'Bala M.', texte: 'Moi je viens vers 18h30', ts: t0 - 3300e3 },
                  c3: { uid: 'm2', nom: 'Bala M.', texte: "J'apporte les cochonnets", ts: t0 - 3250e3 },
                  c4: { uid: 'm3', nom: 'Vijay K.', texte: 'Partant aussi ! On fait une triplette ?', ts: t0 - 1200e3 } };
-  store.matchs = {}; store.matchs[iso] = { d1: { eqA: { nom: 'Équipe 1', joueurs: ['Bala Murugan', 'Vijay Kannan'] }, eqB: { nom: 'Équipe 2', joueurs: ['Rajan Ramassamy', 'Karthik Raman'] }, ts: 1, par: 'Rajan Ramassamy',
+  store.matchs = {};
+  (function(){ // parties d'exemple du mois en cours pour le classement
+    var J = ['Rajan Ramassamy','Anand Selvam','Bala Murugan','Vijay Kannan','Suresh Pillai','Mohan Das','Arun Prakash','Karthik Raman','Invité Démo'];
+    var P = [[[2,3],[0,7],13,9],[[0,1],[4,5],13,11],[[2,8],[3,6],13,6],[[5,7],[1,2],10,13],[[0,3],[6,8],13,4],[[4,1],[2,7],13,12],[[2,0,6],[3,5,8],13,7],[[7,1],[0,4],8,13]];
+    P.forEach(function(p, i){
+      var dd = new Date(); dd.setDate(Math.max(1, dd.getDate() - (i % 6) - 1)); if (dd.getMonth() !== new Date().getMonth()) dd = new Date();
+      var day = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0');
+      if (day === iso) return;
+      store.matchs[day] = store.matchs[day] || {};
+      store.matchs[day]['p' + i] = { eqA: { nom: 'Équipe A', joueurs: p[0].map(function(k){ return J[k]; }) }, eqB: { nom: 'Équipe B', joueurs: p[1].map(function(k){ return J[k]; }) }, ts: i,
+        menes: { a: { eq: 'A', pts: p[2], ts: 1 }, b: { eq: 'B', pts: p[3], ts: 2 } } };
+    });
+  })();
+  store.matchs[iso] = { d1: { eqA: { nom: 'Équipe 1', joueurs: ['Bala Murugan', 'Vijay Kannan'] }, eqB: { nom: 'Équipe 2', joueurs: ['Rajan Ramassamy', 'Karthik Raman'] }, ts: 1, par: 'Rajan Ramassamy',
     menes: { a: { eq: 'A', pts: 2, ts: 1 }, b: { eq: 'B', pts: 1, ts: 2 }, c: { eq: 'A', pts: 3, ts: 3 }, d: { eq: 'B', pts: 4, ts: 4 } } } };
   cur = { uid: uid, email: 'demo@demo.pvk' };   // connecté automatiquement
 

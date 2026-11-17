@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=61"/>
+  <link rel="stylesheet" href="style.css?v=62"/>
 </head>
 <body>
 
@@ -104,6 +104,7 @@
       <li onclick="nav('agenda')"><span class="menu-icon">📅</span> Agenda</li>
       <li onclick="nav('tirage')"><span class="menu-icon">🎲</span> Tirage des équipes</li>
       <li onclick="nav('score')"><span class="menu-icon">🔴</span> Score en direct</li>
+      <li onclick="nav('classement')"><span class="menu-icon">🏆</span> Classement</li>
       <li onclick="nav('chat')"><span class="menu-icon">💬</span> Discussion du club</li>
       <li onclick="nav('films')"><span class="menu-icon">🎬</span> Films</li>
       <li onclick="nav('promos')"><span class="menu-icon">🛒</span> Promos</li>
@@ -637,6 +638,21 @@
       </div>
     </div>
 
+    <!-- CLASSEMENT -->
+    <div id="page-classement" class="page">
+      <div class="page-inner">
+        <h2 class="page-title">🏆 Classement</h2>
+        <p class="page-subtitle" id="classMois"></p>
+        <div id="classementAccessMsg" class="access-msg hidden">🔒 Réservé aux adhérents.</div>
+        <div id="classementContenu">
+          <div class="class-regle">🥇 Victoire = <b>3 pts</b> · Défaite = <b>1 pt</b> · parties terminées du Score en direct</div>
+          <div id="classPodium"></div>
+          <div id="classTableau"></div>
+          <div id="classPrecedent"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="page-score" class="page">
       <div class="page-inner">
         <h2 class="page-title">🔴 Score en direct</h2>
@@ -785,6 +801,9 @@
     <button class="nav-btn" id="navClub" onclick="showPage('club')">
       <span class="nav-icon">🤝</span><span class="nav-label">Club</span>
     </button>
+    <button class="nav-btn" id="navClassement" onclick="showPage('classement')">
+      <span class="nav-icon">🏆</span><span class="nav-label">Podium</span>
+    </button>
     <button class="nav-btn" id="navAgenda" onclick="showPage('agenda')">
       <span class="nav-icon">📅<span class="badge hidden" id="badgeAgenda"></span></span><span class="nav-label">Agenda</span>
     </button>
@@ -821,7 +840,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=68"></script>
+<script src="app.js?v=69"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

@@ -509,7 +509,7 @@ function showPage(page) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const el = document.getElementById(`page-${page}`);
   if (el) el.classList.add('active');
-  const navMap = { accueil:'navAccueil', club:'navClub', agenda:'navAgenda', actualites:'navActus', membres:'navMembres', profil:'navProfil' };
+  const navMap = { accueil:'navAccueil', club:'navClub', classement:'navClassement', agenda:'navAgenda', actualites:'navActus', membres:'navMembres', profil:'navProfil' };
   if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
   if (currentPage === 'chat' && page !== 'chat') { arreterChat(); if (chatEdition) annulerModifMessage(); }
   currentPage = page;
@@ -535,6 +535,7 @@ function renderPage(page) {
     case 'rasi':       renderRasi(); break;
     case 'tirage':     renderTirage(); break;
     case 'score':      renderScore(); break;
+    case 'classement': renderClassement(); break;
     case 'chat':       renderChat(); break;
     case 'festivals':  renderFestivals(); break;
     case 'admin':      renderAdmin(); break;
@@ -1889,11 +1890,94 @@ function supprimerPartie(id) {
 // L'admin fait le ménage : on efface les parties de plus de 30 jours
 function nettoyerMatchs() {
   if (!db || !currentUser || currentUser.role !== 'admin') return;
-  const lim = new Date(); lim.setDate(lim.getDate() - 30); const l = dateISO(lim);
+  const lim = new Date(); lim.setDate(lim.getDate() - 62); const l = dateISO(lim);   // 2 mois, pour le classement
   db.ref('matchs').once('value').then(function(s) {
     const maj = {}; s.forEach(function(c) { if (c.key < l) maj['matchs/' + c.key] = null; });
     if (Object.keys(maj).length) db.ref().update(maj).catch(function(){});
   }).catch(function(){});
+}
+
+/* ===================== 🏆 CLASSEMENT DU MOIS ===================== */
+// Calculé à partir des parties terminées (matchs/<date>) : victoire 3 pts, défaite 1 pt, pour chaque joueur de l'équipe.
+// L'admin garde un résumé par mois dans config/classement/<AAAA-MM> (les parties sont effacées après 62 jours).
+const PTS_VICTOIRE = 3, PTS_DEFAITE = 1;
+function cleJoueur(n) { return String(n || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
+function moisISO(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function nomMois(iso) { const p = iso.split('-'); return MOIS_LONGS[+p[1] - 1] + ' ' + p[0]; }
+
+function calculerClassement(matchsParJour, mois) {
+  const t = {};
+  Object.keys(matchsParJour || {}).filter(j => j.slice(0, 7) === mois).forEach(j => {
+    const jour = matchsParJour[j] || {};
+    Object.keys(jour).forEach(id => {
+      const m = jour[id] || {}, e = etatMatch(m);
+      if (!e.fini) return;
+      [['A', m.eqA, e.A, e.B], ['B', m.eqB, e.B, e.A]].forEach(x => {
+        const joueurs = (x[1] && Array.isArray(x[1].joueurs)) ? x[1].joueurs : [];
+        const gagne = e.gagnant === x[0];
+        joueurs.forEach(nom => {
+          const k = cleJoueur(nom); if (!k) return;
+          const s = t[k] || (t[k] = { nom: String(nom).trim().replace(/\s+/g, ' '), j: 0, v: 0, d: 0, pts: 0, diff: 0 });
+          s.j++; if (gagne) { s.v++; s.pts += PTS_VICTOIRE; } else { s.d++; s.pts += PTS_DEFAITE; }
+          s.diff += x[2] - x[3];
+        });
+      });
+    });
+  });
+  return Object.values(t).sort((a, b) => b.pts - a.pts || b.v - a.v || b.diff - a.diff || a.nom.localeCompare(b.nom));
+}
+
+function renderClassement() {
+  const ok = peutScorer();
+  document.getElementById('classementAccessMsg').classList.toggle('hidden', ok);
+  document.getElementById('classementContenu').classList.toggle('hidden', !ok);
+  if (!ok || !db) return;
+  const mois = moisISO(new Date()), dp = new Date(); dp.setDate(1); dp.setMonth(dp.getMonth() - 1);
+  const moisPrec = moisISO(dp);
+  document.getElementById('classMois').textContent = 'Classement de ' + nomMois(mois);
+  document.getElementById('classTableau').innerHTML = '<p class="vide">⏳ Calcul…</p>';
+  document.getElementById('classPodium').innerHTML = ''; document.getElementById('classPrecedent').innerHTML = '';
+  Promise.all([db.ref('matchs').once('value'), db.ref('config/classement').once('value').catch(() => null)]).then(function(r) {
+    const tous = r[0].val() || {}, archives = (r[1] && r[1].val()) || {};
+    const liste = calculerClassement(tous, mois);
+    afficherClassement(liste);
+    if (currentUser.role === 'admin') archiverClassement(tous, archives, mois, moisPrec);
+    // Podium du mois précédent : résumé archivé, sinon recalcul s'il reste des parties
+    const prec = (archives[moisPrec] && archives[moisPrec].top) || calculerClassement(tous, moisPrec).slice(0, 3);
+    if (prec && prec.length) {
+      const med = ['🥇','🥈','🥉'];
+      document.getElementById('classPrecedent').innerHTML = `<div class="card mt-16"><div class="section-title mb-8">📅 Podium de ${nomMois(moisPrec)}</div>` +
+        prec.slice(0, 3).map((p, i) => `<div class="class-prec"><span>${med[i]} ${escapeHtml(p.nom)}</span><b>${p.pts} pts</b></div>`).join('') + '</div>';
+    }
+  }).catch(function() { document.getElementById('classTableau').innerHTML = '<p class="vide">Classement indisponible (connexion ?).</p>'; });
+}
+
+function afficherClassement(liste) {
+  const moi = cleJoueur((currentUser.prenom || '') + ' ' + (currentUser.nom || ''));
+  if (!liste.length) {
+    document.getElementById('classTableau').innerHTML = '<p class="vide">Aucune partie terminée ce mois-ci.<br/>Lancez une partie dans 🔴 Score en direct (depuis le 🎲 Tirage, les noms des joueurs sont ajoutés automatiquement).</p>';
+    return;
+  }
+  const med = ['🥇','🥈','🥉'], ordre = [1, 0, 2];
+  document.getElementById('classPodium').innerHTML = '<div class="podium">' + ordre.filter(i => liste[i]).map(i =>
+    `<div class="podium-place p${i + 1}"><div class="podium-med">${med[i]}</div><div class="podium-nom">${escapeHtml(liste[i].nom)}</div><div class="podium-pts">${liste[i].pts} pts</div><div class="podium-socle">${i + 1}</div></div>`).join('') + '</div>';
+  let rang = 0, prec = null;
+  document.getElementById('classTableau').innerHTML = `<div class="card class-card"><table class="class-table">
+    <thead><tr><th>#</th><th class="g">Joueur</th><th>Pts</th><th>J</th><th>V</th><th>D</th><th>+/−</th></tr></thead><tbody>` +
+    liste.map((p, i) => {
+      if (!prec || p.pts !== prec.pts || p.v !== prec.v || p.diff !== prec.diff) rang = i + 1; prec = p;
+      return `<tr class="${cleJoueur(p.nom) === moi ? 'moi' : ''}"><td>${rang <= 3 ? med[rang - 1] : rang}</td><td class="g">${escapeHtml(p.nom)}</td><td class="pts">${p.pts}</td><td>${p.j}</td><td>${p.v}</td><td>${p.d}</td><td>${p.diff > 0 ? '+' : ''}${p.diff}</td></tr>`;
+    }).join('') + `</tbody></table><p class="class-legende">J joués · V victoires · D défaites · +/− points marqués moins encaissés</p></div>`;
+}
+
+// L'admin enregistre le podium (top 10) du mois en cours et du mois précédent
+function archiverClassement(tous, archives, mois, moisPrec) {
+  const maj = {};
+  [mois, moisPrec].forEach(mo => {
+    const top = calculerClassement(tous, mo).slice(0, 10).map(p => ({ nom: p.nom, pts: p.pts, v: p.v, j: p.j }));
+    if (top.length && JSON.stringify((archives[mo] || {}).top || []) !== JSON.stringify(top)) maj['config/classement/' + mo] = { top: top, maj: Date.now() };
+  });
+  if (Object.keys(maj).length) db.ref().update(maj).catch(function(){});
 }
 
 /* ===================== COURS DE L'OR (XAUS, gratuit, sans clé) ===================== */
