@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=60"/>
+  <link rel="stylesheet" href="style.css?v=61"/>
 </head>
 <body>
 
@@ -631,6 +631,7 @@
         <div id="chatListe" class="chat-liste"></div>
       </div>
       <div class="chat-saisie hidden" id="chatSaisie">
+        <div class="chat-edition hidden" id="chatEdition">✏️ Modification du message <button onclick="annulerModifMessage()">Annuler</button></div>
         <textarea id="chatTexte" rows="1" maxlength="500" placeholder="Écrire un message…" oninput="ajusterChat(this)" onkeydown="toucheChat(event)"></textarea>
         <button class="chat-envoyer" onclick="envoyerMessage()" aria-label="Envoyer">➤</button>
       </div>
@@ -820,7 +821,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=67"></script>
+<script src="app.js?v=68"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

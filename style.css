@@ -1168,3 +1168,8 @@ body.fete-noel .fete-deco span { animation-name:neige; top:-30px; bottom:auto; }
 .quick-barre .quick-icon { position:relative; }
 .quick-barre .badge { top:-3px; right:-9px; overflow:visible; max-width:none; }
 .chat-envoyer { flex:none; width:42px; height:42px; border-radius:50%; border:none; background:var(--red); color:#fff; font-size:1.1rem; cursor:pointer; }
+
+.chat-saisie { flex-wrap:wrap; }
+.chat-edition { flex-basis:100%; font-size:.8rem; color:var(--red); font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+.chat-edition.hidden { display:none; }
+.chat-edition button { background:none; border:none; color:var(--text-muted); font-weight:700; text-decoration:underline; cursor:pointer; }
