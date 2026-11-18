@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="icon-192.png"/>
   <title>Pétanque Vetri Kazhagam</title>
   <link rel="manifest" href="manifest.json"/>
-  <link rel="stylesheet" href="style.css?v=62"/>
+  <link rel="stylesheet" href="style.css?v=63"/>
 </head>
 <body>
 
@@ -767,6 +767,8 @@
           <div class="admin-stat-card"><div class="admin-stat-val" id="statExpires">0</div><div class="admin-stat-lbl">Inactifs</div></div>
           <div class="admin-stat-card"><div class="admin-stat-val" id="statCA">0€</div><div class="admin-stat-lbl">Encaissé</div></div>
         </div>
+        <div class="section-title mt-16">📈 Connexions</div>
+        <div class="card mb-12" id="statsConnexions"><p class="vide">⏳ Chargement…</p></div>
         <div class="section-title mt-16">💰 Cotisations hors appli</div>
         <div class="card mb-12 ha-card">
           <p class="ha-aide">Pour les membres qui ont payé sans compte dans l'appli. Les noms restent visibles par vous seul ; les membres ne voient que le total.</p>
@@ -840,7 +842,7 @@
 })();
 function decouvrirDemo(){ try { sessionStorage.setItem('pvk_demo', '1'); } catch (e) {} location.href = location.pathname + '?demo'; }
 </script>
-<script src="app.js?v=69"></script>
+<script src="app.js?v=70"></script>
 <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

@@ -16,6 +16,7 @@
   function actif(){ return cur && store.users && store.users[cur.uid] && store.users[cur.uid].abonnement && store.users[cur.uid].abonnement.statut==='actif'; }
   function canRead(p){ var s=p.split('/').filter(Boolean); if(!cur) return false;
     if(s[0]==='annuaire'||s[0]==='presences'||s[0]==='matchs'||s[0]==='chat') return isAdmin()||actif();
+    if(s[0]==='stats') return isAdmin() || (s.length===3 && s[2]===cur.uid);
     if(['news','agenda','films','config','festivals'].includes(s[0])) return true;
     if(s[0]==='admins') return s.length===1? isAdmin() : (s[1]===cur.uid||isAdmin());
     if(s[0]==='users') return s.length===1? isAdmin() : (s[1]===cur.uid||isAdmin());
@@ -25,6 +26,7 @@
     if(s[0]==='annuaire' && s.length>=2){ if(isAdmin()) return true; return s[1]===cur.uid && s.length===3 && ['prenom','nom','tel','fonction'].includes(s[2]); }
     if(s[0]==='matchs') return s.length>=2 && (isAdmin()||actif());
     if(s[0]==='chat') return s.length>=2 && (isAdmin()||actif());
+    if(s[0]==='stats') return isAdmin() || (s.length>=3 && s[2]===cur.uid);
     if(s[0]==='presences'){ if(isAdmin()) return true; return s.length===3 && s[2]===cur.uid && actif(); }
     if(s.length===0) return isAdmin();
     if(s[0]==='users' && s.length>=2){ if(isAdmin()) return true; return s[1]===cur.uid && s.length===3 && SELF.includes(s[2]); }
@@ -79,6 +81,11 @@
     x2: { nom: 'Cochonnets en buis', cat: 'cochonnet', qte: 10, prix: 15, date: plus(-20), etat: 'bon', garde: 'Rajan', ts: 2 },
     x3: { nom: 'Mètre de pétanque', cat: 'mesure', qte: 1, prix: 8.5, date: plus(-40), etat: 'use', garde: 'Vijay', ts: 3 } } };
   var t0 = Date.now();
+  store.stats = {};
+  (function(){ var P=[{chat:4,classement:2,score:3,rasi:1},{chat:2,promos:1,carburants:2},{classement:1,agenda:1,chat:3},{rasi:2,films:1,score:2,tirage:1},{chat:1,actualites:2,club:1}]; var N=['Rajan R.','Anand S.','Bala M.','Vijay K.','Suresh P.','Mohan D.','Arun P.','Karthik R.','Senthil N.','Kumar R.'];
+    for (var i=1;i<14;i++){ var x=new Date(); x.setDate(x.getDate()-i); var j=x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+      var k=3+((i*7)%6); store.stats[j]={}; for (var m=0;m<k;m++) store.stats[j]['m'+((m+i)%10)]={nom:N[(m+i)%10],n:1+((m+i)%3),ts:i,pages:P[(m+i)%P.length]}; }
+    store.stats[iso]={ m0:{nom:'Rajan R.',n:3,ts:3}, m2:{nom:'Bala M.',n:1,ts:2}, m3:{nom:'Vijay K.',n:2,ts:1}, m7:{nom:'Karthik R.',n:1,ts:4} }; })();
   store.chat = { c1: { uid: 'm0', nom: 'Rajan R.', texte: 'Vanakkam à tous ! Qui vient ce soir au terrain ? 🙂', ts: t0 - 3600e3 },
                  c2: { uid: 'm2', nom: 'Bala M.', texte: 'Moi je viens vers 18h30', ts: t0 - 3300e3 },
                  c3: { uid: 'm2', nom: 'Bala M.', texte: "J'apporte les cochonnets", ts: t0 - 3250e3 },

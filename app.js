@@ -470,11 +470,95 @@ function showError(id, msg) {
 }
 
 /* ===================== APP SHELL ===================== */
+/* ===================== 📈 CONNEXIONS PAR JOUR ===================== */
+// stats/<AAAA-MM-JJ>/<uid> = { nom, n (ouvertures de l'appli ce jour-là), ts } — chacun écrit sa ligne, seul l'admin lit.
+// Une « ouverture » = l'appli ouverte ou ramenée au premier plan après au moins 30 min.
+function noterVisite() {
+  if (!db || !currentUser) return;
+  let der = 0; try { der = +localStorage.getItem('pvk_visite') || 0; } catch (e) {}
+  if (Date.now() - der < 30 * 60000) return;
+  try { localStorage.setItem('pvk_visite', String(Date.now())); } catch (e) {}
+  const ref = db.ref('stats/' + dateISO(new Date()) + '/' + currentUser.id);
+  ref.once('value').then(function(s) {
+    const v = s.val() || {};
+    return ref.update({ nom: nomCourt(currentUser), n: (+v.n || 0) + 1, ts: Date.now() });
+  }).catch(function(){});
+}
+let visiteEcoute = false;
+function suivreVisites() {
+  noterVisite();
+  if (!visiteEcoute) { visiteEcoute = true; document.addEventListener('visibilitychange', function() { if (!document.hidden) noterVisite(); }); }
+}
+
+// Rubriques utilisées : stats/<jour>/<uid>/pages/<page> = nombre de fois (envoyé quelques secondes après)
+const RUBRIQUES = { club:['🤝','Club'], classement:['🏆','Podium'], agenda:['📅','Agenda'], actualites:['📰','Actus'], membres:['👥','Membres'],
+  profil:['👤','Profil'], chat:['💬','Chat'], score:['🔴','Score'], promos:['🛒','Promos'], tirage:['🎲','Tirage'], films:['🎬','Films'],
+  carburants:['⛽','Essence'], voyage:['✈️','Voyage'], rasi:['🔮','ராசி'], festivals:['🎉','Festivals'], contacts:['📞','Contacts'],
+  carte:['🪪','Carte'], abonnement:['💶','Cotisation'], adhesion:['📝','Adhésion'] };
+let pagesEnvoi = null;
+function noterRubrique(page) {
+  if (!db || !currentUser || !RUBRIQUES[page]) return;
+  const jour = dateISO(new Date()), cle = 'pvk_rub_' + jour;
+  let c = {}; try { c = JSON.parse(localStorage.getItem(cle) || '{}'); } catch (e) {}
+  c[page] = (c[page] || 0) + 1;
+  try { localStorage.setItem(cle, JSON.stringify(c)); } catch (e) {}
+  clearTimeout(pagesEnvoi);
+  pagesEnvoi = setTimeout(function() {
+    db.ref('stats/' + jour + '/' + currentUser.id).update({ nom: nomCourt(currentUser), pages: c, ts: Date.now() }).catch(function(){});
+  }, 4000);
+}
+
+function renderStatsConnexions() {
+  const c = document.getElementById('statsConnexions'); if (!c || !db) return;
+  const jours = []; for (let i = 13; i >= 0; i--) { const x = new Date(); x.setDate(x.getDate() - i); jours.push(dateISO(x)); }
+  db.ref('stats').once('value').then(function(s) {
+    const tout = s.val() || {}, moi = currentUser.id;
+    const parJour = jours.map(j => {
+      const l = Object.keys(tout[j] || {}).filter(u => u !== moi).map(u => tout[j][u]);
+      return { j: j, membres: l.length, ouv: l.reduce((t, v) => t + (+v.n || 0), 0), noms: l.sort((a, b) => (b.ts || 0) - (a.ts || 0)) };
+    });
+    const auj = parJour[parJour.length - 1], max = Math.max(1, ...parJour.map(p => p.membres));
+    const sem = parJour.slice(-7), moy = Math.round(sem.reduce((t, p) => t + p.membres, 0) / 7 * 10) / 10;
+    const uniques = new Set(); jours.slice(-7).forEach(j => Object.keys(tout[j] || {}).forEach(u => { if (u !== moi) uniques.add(u); }));
+    const jc = j => { const x = new Date(j + 'T12:00:00'); return ['D','L','M','M','J','V','S'][x.getDay()] + '<br/>' + x.getDate(); };
+    c.innerHTML = `<div class="cx-chiffres">
+        <div><span>${auj.membres}</span>membres aujourd'hui</div>
+        <div><span>${auj.ouv}</span>ouvertures aujourd'hui</div>
+        <div><span>${uniques.size}</span>membres sur 7 jours</div>
+      </div>
+      <div class="cx-graph">${parJour.map(p => `<div class="cx-col${p.j === auj.j ? ' auj' : ''}" title="${p.membres} membres · ${p.ouv} ouvertures"><div class="cx-b"><b>${p.membres || ''}</b><i style="height:${Math.round(p.membres / max * 85)}%"></i></div><small>${jc(p.j)}</small></div>`).join('')}</div>
+      <p class="cx-note">Membres différents par jour, sur 14 jours · moyenne 7 jours : ${String(moy).replace('.', ',')} / jour · vos propres connexions ne sont pas comptées</p>
+      ${rubriquesHtml(tout, jours.slice(-7), moi)}
+      ${auj.noms.length ? `<div class="cx-noms"><b>Aujourd'hui :</b> ${auj.noms.map(v => `${escapeHtml(v.nom || '')}${+v.n > 1 ? ` <small>×${v.n}</small>` : ''}`).join(', ')}</div>` : ''}`;
+    // Ménage : on garde 90 jours
+    const lim = new Date(); lim.setDate(lim.getDate() - 90); const l = dateISO(lim), maj = {};
+    Object.keys(tout).forEach(j => { if (j < l) maj['stats/' + j] = null; });
+    if (Object.keys(maj).length) db.ref().update(maj).catch(function(){});
+  }).catch(function() { c.innerHTML = '<p class="vide">Statistiques indisponibles (règles Firebase « stats » à publier ?).</p>'; });
+}
+
+function rubriquesHtml(tout, jours, moi) {
+  const t = {};
+  jours.forEach(j => Object.keys(tout[j] || {}).forEach(u => {
+    if (u === moi) return;
+    const p = (tout[j][u] || {}).pages || {};
+    Object.keys(p).forEach(k => { if (!RUBRIQUES[k]) return; const x = t[k] || (t[k] = { vues: 0, membres: new Set() }); x.vues += +p[k] || 0; x.membres.add(u); });
+  }));
+  const l = Object.keys(t).map(k => ({ k: k, vues: t[k].vues, membres: t[k].membres.size })).sort((a, b) => b.membres - a.membres || b.vues - a.vues);
+  if (!l.length) return '<p class="cx-note mt-8">Rubriques utilisées : pas encore de données.</p>';
+  const max = Math.max(...l.map(x => x.membres));
+  return `<div class="section-title mt-16 mb-8">Rubriques les plus utilisées · 7 jours</div>` + l.map(x =>
+    `<div class="cx-rub"><span class="cx-rub-nom">${RUBRIQUES[x.k][0]} ${RUBRIQUES[x.k][1]}</span>
+      <span class="cx-rub-barre"><i style="width:${Math.round(x.membres / max * 100)}%"></i></span>
+      <span class="cx-rub-val">${x.membres} memb. · ${x.vues}×</span></div>`).join('');
+}
+
 function enterApp() {
   document.getElementById('page-login').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   updateSidebar();
   showPage('accueil');
+  suivreVisites();
 }
 
 function updateSidebar() {
@@ -513,7 +597,7 @@ function showPage(page) {
   if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
   if (currentPage === 'chat' && page !== 'chat') { arreterChat(); if (chatEdition) annulerModifMessage(); }
   currentPage = page;
-  if (page !== 'login') renderPage(page);
+  if (page !== 'login') { renderPage(page); noterRubrique(page); }
   window.scrollTo(0,0);
 }
 
@@ -2586,6 +2670,7 @@ function supprimerMateriel(id) {
 }
 
 function renderAdminWithUsers(users) {
+  renderStatsConnexions();
   var actifs  = users.filter(function(u){ return isAbonnementActif(u); });
   var expires = users.filter(function(u){ return !isAbonnementActif(u); });
   document.getElementById('statTotal').textContent   = users.length;

@@ -1199,3 +1199,23 @@ body.fete-noel .fete-deco span { animation-name:neige; top:-30px; bottom:auto; }
 .class-table tr:last-child td { border-bottom:none; }
 .class-legende { font-size:.7rem; color:var(--text-muted); margin:8px 4px 0; }
 .class-prec { display:flex; justify-content:space-between; padding:6px 0; font-size:.9rem; }
+
+/* ===== Connexions (admin) ===== */
+.cx-chiffres { display:flex; gap:8px; margin-bottom:12px; }
+.cx-chiffres > div { flex:1; text-align:center; font-size:.7rem; color:var(--text-muted); background:var(--bg); border-radius:12px; padding:8px 4px; }
+.cx-chiffres span { display:block; font-size:1.4rem; font-weight:800; color:var(--red); }
+.cx-graph { display:flex; align-items:flex-end; gap:3px; height:150px; padding-top:4px; }
+.cx-col { flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; }
+.cx-b { flex:1; width:100%; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; min-height:0; }
+.cx-col b { font-size:.62rem; color:var(--text-muted); margin-bottom:2px; }
+.cx-col i { display:block; width:100%; min-height:2px; background:#F2A7B4; border-radius:4px 4px 0 0; }
+.cx-col.auj i { background:var(--red); }
+.cx-col small { font-size:.58rem; color:var(--text-muted); text-align:center; line-height:1.1; margin-top:3px; height:24px; }
+.cx-note { font-size:.7rem; color:var(--text-muted); margin:8px 0 0; }
+.cx-noms { font-size:.8rem; margin-top:10px; line-height:1.5; }
+.cx-noms small { color:var(--text-muted); }
+.cx-rub { display:flex; align-items:center; gap:8px; font-size:.8rem; padding:4px 0; }
+.cx-rub-nom { flex:none; width:96px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cx-rub-barre { flex:1; height:10px; background:var(--bg); border-radius:6px; overflow:hidden; }
+.cx-rub-barre i { display:block; height:100%; background:var(--red); border-radius:6px; }
+.cx-rub-val { flex:none; width:96px; text-align:right; font-size:.7rem; color:var(--text-muted); }
